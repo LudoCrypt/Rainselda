@@ -20,7 +20,10 @@ public class DesktopLauncher {
             }
 
         });
-        new Lwjgl3Application(Rainselda.INSTANCE, config);
+
+        config.setWindowIcon("Icon.png", "Icon64.png", "Icon48.png", "Icon32.png", "Icon16.png");
+
+        Lwjgl3Application app = new Lwjgl3Application(Rainselda.INSTANCE, config);
     }
 
 }

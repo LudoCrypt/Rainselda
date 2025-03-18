@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 
+// yayayayayaya i know i know "this should be a separate class for each thing !!!" cmon please idfc
 public class MathHelper {
 
     public static double lerp(double a, double b, double t) {

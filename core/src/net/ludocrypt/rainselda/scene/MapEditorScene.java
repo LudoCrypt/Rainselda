@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Cursor.SystemCursor;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -24,11 +25,13 @@ public class MapEditorScene extends Scene {
     Viewport viewport;
     ShapeRenderer shapeRenderer;
 
+    Texture logo;
+
     Stage stage;
 
     // TODO: Theme
-    float xBuffer = 3;
-    float yBuffer = 3;
+    float xBuffer = 10;
+    float yBuffer = 10;
     float radius = 10;
 
     // The boarder lines for the like three main columns idk
@@ -41,6 +44,7 @@ public class MapEditorScene extends Scene {
         viewport = new Viewport(rainselda);
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
+        logo = new Texture("Logo.png");
 
         stage = new Stage(new ScreenViewport());
 
@@ -57,16 +61,12 @@ public class MapEditorScene extends Scene {
 
             @Override
             public boolean touchDown(InputEvent event, float x, float y, int pointer, int button) {
-
                 if (button == 0) {
-                    x = Gdx.input.getX();
-                    if (Math.abs(x - columnBoarders[1]) < xBuffer) {
+                    int index = columnIndex();
+
+                    if (index != -1) {
                         this.dragging = true;
-                        this.draggedOffset = 1;
-                        return true;
-                    } else if (Math.abs(x - columnBoarders[2]) < xBuffer) {
-                        this.dragging = true;
-                        this.draggedOffset = 2;
+                        this.draggedOffset = index;
                         return true;
                     }
                 }
@@ -82,6 +82,7 @@ public class MapEditorScene extends Scene {
             @Override
             public void touchDragged(InputEvent event, float x, float y, int pointer) {
                 if (this.dragging) {
+                    // i love it how the float x up top is FUCKNIG 0-640 GRAHGHHGFJFJFJFJHFHJFHJ fuck you
                     x = Gdx.input.getX();
                     MapEditorScene.this.columnBoarders[this.draggedOffset] = MathHelper.clamp(x, MapEditorScene.this.columnBoarders[this.draggedOffset - 1] + xBuffer + radius + radius, MapEditorScene.this.columnBoarders[this.draggedOffset + 1] - xBuffer - radius - radius);
                 }
@@ -99,27 +100,47 @@ public class MapEditorScene extends Scene {
         shapeRenderer.setAutoShapeType(true);
 
         // Draw the background
-        // TODO: Theme
-        shapeRenderer.setColor(MathHelper.hexToColor("141414"));
-        shapeRenderer.rect(0, 0, rainselda.getWidth(), rainselda.getHeight());
-
-        // Draw the boxes with the things like the map and side panels idk how to call it
-        // TODO: Theme
-        shapeRenderer.set(ShapeType.Line);
-        shapeRenderer.setColor(MathHelper.hexToColor("494949"));
-
-        for (int i = 0; i < 3; i++) {
-            MathHelper.drawRoundedRectangle(shapeRenderer, columnBoarders[i] + xBuffer, yBuffer, columnBoarders[i + 1] - columnBoarders[i] - xBuffer, rainselda.getHeight() - yBuffer - yBuffer, radius);
+        {
+            // TODO: Theme
+            shapeRenderer.setColor(MathHelper.hexToColor("141414"));
+            shapeRenderer.rect(0, 0, rainselda.getWidth(), rainselda.getHeight());
         }
 
-        int mouseX = Gdx.input.getX();
+        // Draw the boxes with the things like the map and side panels idk how to call it
+        {
+            shapeRenderer.set(ShapeType.Line);
 
-        if (Math.abs(mouseX - columnBoarders[1]) < xBuffer) {
-            Gdx.graphics.setSystemCursor(SystemCursor.HorizontalResize);
-        } else if (Math.abs(mouseX - columnBoarders[2]) < xBuffer) {
-            Gdx.graphics.setSystemCursor(SystemCursor.HorizontalResize);
-        } else {
-            Gdx.graphics.setSystemCursor(SystemCursor.Arrow);
+            // TODO: Theme
+            shapeRenderer.setColor(MathHelper.hexToColor("494949"));
+
+            float boxHeight = (7.0f * rainselda.getHeight() / 8.0f) - yBuffer;
+
+            for (int i = 0; i < 3; i++) {
+                MathHelper.drawRoundedRectangle(shapeRenderer, columnBoarders[i] + xBuffer, yBuffer, columnBoarders[i + 1] - columnBoarders[i] - xBuffer, boxHeight, radius);
+            }
+        }
+
+        // Draw the logo (surely theres a better way to do this :sob:)
+        {
+            float aspect = (float) logo.getWidth() / (float) logo.getHeight();
+
+            float widthScale = 640.0f / rainselda.getWidth();
+            float heightScale = 480.0f / rainselda.getHeight();
+
+            float boxHeight = rainselda.getHeight() / 8.0f;
+
+            batch.draw(logo, 0, 480 - boxHeight * heightScale, aspect * boxHeight * widthScale, boxHeight * heightScale);
+        }
+
+        // Update the mouse icon
+        {
+            int index = columnIndex();
+
+            if (index != -1) {
+                Gdx.graphics.setSystemCursor(SystemCursor.HorizontalResize);
+            } else {
+                Gdx.graphics.setSystemCursor(SystemCursor.Arrow);
+            }
         }
 
         shapeRenderer.end();
@@ -128,6 +149,22 @@ public class MapEditorScene extends Scene {
         stage.draw();
 
         batch.end();
+    }
+
+    private int columnIndex() {
+        int mouseX = Gdx.input.getX();
+        int mouseY = Gdx.input.getY();
+        float boxHeight = (7.0f * rainselda.getHeight() / 8.0f) - yBuffer;
+
+        if (rainselda.getHeight() - mouseY - boxHeight < 0) {
+            if (Math.abs(mouseX - columnBoarders[1]) < xBuffer) {
+                return 1;
+            } else if (Math.abs(mouseX - columnBoarders[2]) < xBuffer) {
+                return 2;
+            }
+        }
+
+        return -1;
     }
 
     @Override
