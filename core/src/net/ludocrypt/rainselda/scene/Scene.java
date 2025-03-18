@@ -9,11 +9,15 @@ public abstract class Scene extends ApplicationAdapter {
     /*
      * Optional input adapter to track inputs, can be null.
      */
-    public abstract @Null InputAdapter getAdapter();
+    public @Null InputAdapter getAdapter() {
+        return null;
+    }
 
     /*
      * Called when files are dropped into main window
      */
-    public abstract void filesDropped(String[] files);
+    public void filesDropped(String[] files) {
+
+    }
 
 }

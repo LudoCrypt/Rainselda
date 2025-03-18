@@ -11,7 +11,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import net.harawata.appdirs.AppDirsFactory;
-import net.ludocrypt.rainselda.scene.SceneTemplate;
+import net.ludocrypt.rainselda.scene.MapEditorScene;
 import net.ludocrypt.rainselda.scene.Scene;
 
 public class Rainselda extends ApplicationAdapter {
@@ -23,7 +23,7 @@ public class Rainselda extends ApplicationAdapter {
     private Scene currentScene;
 
     public Rainselda() {
-        currentScene = new SceneTemplate();
+        currentScene = new MapEditorScene();
     }
 
     @Override
