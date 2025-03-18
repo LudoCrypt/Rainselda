@@ -1,11 +1,21 @@
 package net.ludocrypt.rainselda.util;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 
 public class MathHelper {
 
     public static double lerp(double a, double b, double t) {
         return a + (b - a) * t;
+    }
+
+    public static double clamp(double t, double min, double max) {
+        return Math.max(Math.min(t, max), min);
+    }
+
+    public static float clamp(float t, float min, float max) {
+        return Math.max(Math.min(t, max), min);
     }
 
     public static Color hexToColor(String hex) {
@@ -24,6 +34,40 @@ public class MathHelper {
         float fa = a / 255f;
 
         return new Color(fr, fg, fb, fa);
+    }
+
+    public static void drawRoundedRectangle(ShapeRenderer shapeRenderer, float x, float y, float width, float height, float radius) {
+        drawArc(shapeRenderer, x + radius, y + height - radius, radius, 90, 90);
+        drawArc(shapeRenderer, x + width - radius, y + height - radius, radius, 0, 90);
+        drawArc(shapeRenderer, x + width - radius, y + radius, radius, 270, 90);
+        drawArc(shapeRenderer, x + radius, y + radius, radius, 180, 90);
+
+        shapeRenderer.line(x + radius, y, x + width - radius, y);
+        shapeRenderer.line(x + width, y + radius, x + width, y + height - radius);
+        shapeRenderer.line(x + width - radius, y + height, x + radius, y + height);
+        shapeRenderer.line(x, y + height - radius, x, y + radius);
+    }
+
+    public static void drawArc(ShapeRenderer shapeRenderer, float cx, float cy, float radius, float startAngle, float arcAngle) {
+
+        int segments = Math.max(1, (int) (6 * (float) Math.cbrt(radius) * (arcAngle / 360.0f)));
+        float step = arcAngle / segments;
+        float angle = startAngle;
+
+        float xPrev = cx + radius * (float) Math.cos(Math.toRadians(angle));
+        float yPrev = cy + radius * (float) Math.sin(Math.toRadians(angle));
+
+        for (int i = 0; i <= segments; i++) {
+            float rad = (float) Math.toRadians(angle);
+            float xPos = cx + radius * MathUtils.cos(rad);
+            float yPos = cy + radius * MathUtils.sin(rad);
+
+            shapeRenderer.line(xPrev, yPrev, xPos, yPos);
+
+            xPrev = xPos;
+            yPrev = yPos;
+            angle += step;
+        }
     }
 
 }
