@@ -23,7 +23,7 @@ public class DesktopLauncher {
 
         config.setWindowIcon("Icon.png", "Icon64.png", "Icon48.png", "Icon32.png", "Icon16.png");
 
-        Lwjgl3Application app = new Lwjgl3Application(Rainselda.INSTANCE, config);
+        new Lwjgl3Application(Rainselda.INSTANCE, config);
     }
 
 }

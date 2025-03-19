@@ -7,7 +7,6 @@ import java.io.File;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputAdapter;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import net.harawata.appdirs.AppDirsFactory;
@@ -159,6 +158,14 @@ public class Rainselda extends ApplicationAdapter {
         return height;
     }
 
+    public float getAspectRatio() {
+        return getAspectRatio(false);
+    }
+
+    public float getAspectRatio(boolean inv) {
+        return inv ? ((float) height / (float) width) : ((float) width / (float) height);
+    }
+
     public void filesDropped(String[] files) {
         getCurrentScene().filesDropped(files);
     }
@@ -194,22 +201,29 @@ public class Rainselda extends ApplicationAdapter {
     /*
      * Gets the u coordinate 0-1 over the screen.
      */
-    public static double getU() {
-        return Gdx.input.getX() / (double) Rainselda.INSTANCE.width;
+    public static double getU(int x) {
+        return x / (double) Rainselda.INSTANCE.width;
     }
 
     /*
      * Gets the v coordinate 0-1 over the screen.
      */
-    public static double getV() {
-        return 1 - Gdx.input.getY() / (double) Rainselda.INSTANCE.height;
+    public static double getV(int y) {
+        return y / (double) Rainselda.INSTANCE.height;
     }
 
     /*
-     * Gets the uv coordinate -1-1 (or 0-1 if normalized)
+     * Gets the u coordinate 0-640 over the screen.
      */
-    public static Vector2 getUV(boolean normalize) {
-        return normalize ? new Vector2((float) getU(), (float) getV()) : new Vector2((float) getU() * 2 - 1, (float) getV() * 2 - 1);
+    public static int getScreenU(int x) {
+        return (int) (getU(x) * 640.0);
+    }
+
+    /*
+     * Gets the v coordinate 0-480 over the screen.
+     */
+    public static int getScreenV(int y) {
+        return (int) (getV(y) * 480.0);
     }
 
 }

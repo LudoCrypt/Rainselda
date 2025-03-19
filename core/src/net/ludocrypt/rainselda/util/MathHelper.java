@@ -1,6 +1,9 @@
 package net.ludocrypt.rainselda.util;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 
@@ -38,8 +41,8 @@ public class MathHelper {
     }
 
     public static void drawRoundedRectangle(ShapeRenderer shapeRenderer, float x, float y, float width, float height, float radius) {
-        drawArc(shapeRenderer, x + radius, y + height - radius, radius, 90, 90);
         drawArc(shapeRenderer, x + width - radius, y + height - radius, radius, 0, 90);
+        drawArc(shapeRenderer, x + radius, y + height - radius, radius, 90, 90);
         drawArc(shapeRenderer, x + width - radius, y + radius, radius, 270, 90);
         drawArc(shapeRenderer, x + radius, y + radius, radius, 180, 90);
 
@@ -69,6 +72,12 @@ public class MathHelper {
             yPrev = yPos;
             angle += step;
         }
+    }
+
+    public static BitmapFont generateFontOfSize(FreeTypeFontGenerator generator, int size) {
+        FreeTypeFontParameter parameter = new FreeTypeFontParameter();
+        parameter.size = size;
+        return generator.generateFont(parameter);
     }
 
 }

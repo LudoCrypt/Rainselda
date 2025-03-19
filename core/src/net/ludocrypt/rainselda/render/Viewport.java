@@ -125,7 +125,7 @@ public class Viewport extends InputAdapter {
 
     @Override
     public boolean scrolled(float amountX, float amountY) {
-        this.zoom(Rainselda.getU() * 2 - 1, Rainselda.getV() * 2 - 1, 1.1, (int) amountY);
+//        this.zoom(Rainselda.getU() * 2 - 1, Rainselda.getV() * 2 - 1, 1.1, (int) amountY);
         return false;
     }
 
