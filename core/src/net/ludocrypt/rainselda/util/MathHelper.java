@@ -1,11 +1,15 @@
 package net.ludocrypt.rainselda.util;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Matrix4;
+
+import net.ludocrypt.rainselda.Rainselda;
 
 // yayayayayaya i know i know "this should be a separate class for each thing !!!" cmon please idfc
 public class MathHelper {
@@ -74,10 +78,45 @@ public class MathHelper {
         }
     }
 
-    public static BitmapFont generateFontOfSize(FreeTypeFontGenerator generator, int size) {
-        FreeTypeFontParameter parameter = new FreeTypeFontParameter();
-        parameter.size = size;
-        return generator.generateFont(parameter);
+    // I hope you fucking die and kill yourself and your family too :smiling_face_with_three_hearts:
+    public static void renderText(SpriteBatch batch, ShaderProgram fontShader, BitmapFont font, double x, double y, double scale, String text) {
+        batch.begin();
+        Matrix4 matBack = batch.getProjectionMatrix().cpy();
+        Matrix4 mat = batch.getProjectionMatrix();
+
+        mat.scl((float) scale);
+
+        batch.setShader(fontShader);
+
+        double scaleX = (640.0 / (double) Rainselda.INSTANCE.getWidth());
+        double scaleY = (480.0 / (double) Rainselda.INSTANCE.getHeight());
+
+        font.getData().setScale((float) scaleX, (float) scaleY);
+
+        double transX = Rainselda.getScreenU(x) / scale;
+        double transY = Rainselda.getScreenV(y) / scale;
+
+        for (int j = 0; j < 2; j++) {
+
+            if (j == 0) {
+                batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+            } else {
+                batch.setBlendFunctionSeparate(GL20.GL_SRC_ALPHA, GL20.GL_ONE, GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+            }
+
+            for (int k = 0; k < 3; k++) {
+                fontShader.setUniformi("u_colorize", j);
+                fontShader.setUniformi("u_offset", k);
+                font.draw(batch, text, (float) transX, (float) transY);
+                batch.flush();
+            }
+        }
+
+        batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+        batch.end();
+        batch.setShader(null);
+        batch.setProjectionMatrix(matBack);
     }
 
 }

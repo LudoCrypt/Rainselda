@@ -201,29 +201,29 @@ public class Rainselda extends ApplicationAdapter {
     /*
      * Gets the u coordinate 0-1 over the screen.
      */
-    public static double getU(int x) {
-        return x / (double) Rainselda.INSTANCE.width;
+    public static double getU(double x) {
+        return x / Rainselda.INSTANCE.width;
     }
 
     /*
      * Gets the v coordinate 0-1 over the screen.
      */
-    public static double getV(int y) {
-        return y / (double) Rainselda.INSTANCE.height;
+    public static double getV(double y) {
+        return y / Rainselda.INSTANCE.height;
     }
 
     /*
      * Gets the u coordinate 0-640 over the screen.
      */
-    public static int getScreenU(int x) {
-        return (int) (getU(x) * 640.0);
+    public static double getScreenU(double x) {
+        return getU(x) * 640.0;
     }
 
     /*
      * Gets the v coordinate 0-480 over the screen.
      */
-    public static int getScreenV(int y) {
-        return (int) (getV(y) * 480.0);
+    public static double getScreenV(double y) {
+        return getV(y) * 480.0;
     }
 
 }

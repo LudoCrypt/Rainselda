@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.Cursor.SystemCursor;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
@@ -31,6 +30,7 @@ public class MapEditorScene extends Scene {
 
     // TODO: Theme
     BitmapFont font;
+    ShaderProgram fontShader;
 
     Stage stage;
 
@@ -59,7 +59,8 @@ public class MapEditorScene extends Scene {
 
         this.logo = new Texture("Logo.png");
 
-        this.font = MathHelper.generateFontOfSize(new FreeTypeFontGenerator(Gdx.files.internal("ProggyVector-Regular.ttf")), 48);
+        this.font = new BitmapFont(Gdx.files.internal("fonts/Carlito-Regular.fnt"));
+        this.fontShader = new ShaderProgram(Gdx.files.internal("shaders/msdf.vsh"), Gdx.files.internal("shaders/msdf.fsh"));
 
         this.stage = new Stage(new ScreenViewport());
 
@@ -112,14 +113,15 @@ public class MapEditorScene extends Scene {
 
             @Override
             public boolean touchDown(InputEvent event, float x, float y, int pointer, int button) {
-                if (!this.clicked && button == 1) {
+                MapEditorScene.this.rightClickColumn = -1;
+                MapEditorScene.this.hasRightClicked = false;
+
+                if (button == 1) {
                     this.clicked = true;
                     return true;
                 }
 
                 this.clicked = false;
-                MapEditorScene.this.rightClickColumn = -1;
-                MapEditorScene.this.hasRightClicked = false;
                 return false;
             }
 
@@ -151,34 +153,7 @@ public class MapEditorScene extends Scene {
         this.drawBackground();
         this.drawColumns();
         this.drawLogo();
-
-        if (this.hasRightClicked) {
-
-            // TODO: Theme
-            int textSpacing = 8;
-
-            String[] options = new String[] { "Add Room", "Add Note" };
-
-            this.shapeRenderer.begin(ShapeType.Line);
-
-            MathHelper.drawRoundedRectangle(shapeRenderer, rightClickX, rightClickY - options.length * textSpacing * 4, 100, options.length * textSpacing * 4, 5);
-
-            this.shapeRenderer.end();
-
-            this.batch.begin();
-
-            float scale = 2.7f;
-
-            this.font.getData().setScale((640.0f / (float) rainselda.getWidth()) / scale, (640.0f / (float) rainselda.getHeight()) / scale);
-
-            int i = 0;
-            for (String option : options) {
-                this.font.draw(batch, option, Rainselda.getScreenU(rightClickX + 5), Rainselda.getScreenV(rightClickY - i * textSpacing * 4 - textSpacing));
-                i++;
-            }
-
-            this.batch.end();
-        }
+        this.drawRightClickWidget();
 
         this.stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
         this.stage.draw();
@@ -272,6 +247,32 @@ public class MapEditorScene extends Scene {
         this.shapeRenderer.rect(0, 0, rainselda.getWidth(), rainselda.getHeight());
 
         this.shapeRenderer.end();
+    }
+
+    private void drawRightClickWidget() {
+        if (this.hasRightClicked) {
+
+            // TODO: Theme
+            int textSpacing = 5;
+
+            String[] options = new String[] { "Add Room", "Add Note" };
+
+            this.shapeRenderer.begin(ShapeType.Line);
+
+            MathHelper.drawRoundedRectangle(this.shapeRenderer, this.rightClickX, this.rightClickY - options.length * textSpacing * 4, 100, options.length * textSpacing * 4, 5);
+
+            this.shapeRenderer.end();
+
+            int i = 0;
+            for (String option : options) {
+                double transX = this.rightClickX + 5;
+                double transY = this.rightClickY - i * textSpacing * 4 - textSpacing;
+
+                MathHelper.renderText(batch, fontShader, font, transX, transY, 0.25, option);
+
+                i++;
+            }
+        }
     }
 
     @Override
