@@ -42,6 +42,8 @@ public class MapEditorScene extends Scene {
 	BitmapFont font;
 	ShaderProgram fontShader;
 
+	ShaderProgram shapesShader;
+
 	Stage stage;
 
 	// TODO: Theme
@@ -85,6 +87,7 @@ public class MapEditorScene extends Scene {
 		this.font.setUseIntegerPositions(false);
 
 		this.fontShader = new ShaderProgram(Gdx.files.internal("shaders/msdf.vsh"), Gdx.files.internal("shaders/msdf.fsh"));
+		this.shapesShader = new ShaderProgram(Gdx.files.internal("shaders/shapes.vsh"), Gdx.files.internal("shaders/shapes.fsh"));
 
 		this.stage = new Stage(new ScreenViewport());
 
@@ -145,7 +148,7 @@ public class MapEditorScene extends Scene {
 					return true;
 				} else if (button == 0) {
 					if (rightClickIndex(MapEditorScene.this.mapExtraWidgets.length) == 0) {
-						MapEditorScene.this.region.addRoom(new Room(), new Mapos(Gdx.input.getX(), MapEditorScene.this.rainselda.getHeight() - Gdx.input.getY(), 0));
+						MapEditorScene.this.region.addRoom(new Room(), new Mapos(x, y, 0));
 					}
 				}
 
@@ -194,9 +197,27 @@ public class MapEditorScene extends Scene {
 			Mapos pos = entry.getValue();
 
 			if (object instanceof Room room) {
-				this.shapeRenderer.begin(ShapeType.Line);
-				MathHelper.drawRoundedRectangle(shapeRenderer, (float) pos.getX(), (float) pos.getY(), 73, 42, 10);
-				this.shapeRenderer.end();
+//				this.shapeRenderer.begin(ShapeType.Line);
+//				MathHelper.drawRoundedRectangle(shapeRenderer, (float) pos.getX(), (float) pos.getY(), 73, 42, 10);
+//				this.shapeRenderer.end();
+
+				this.batch.begin();
+				this.batch.setShader(this.shapesShader);
+
+				Mapos size = new Mapos(32, 24);
+				Mapos scale = affixScale(size.getX(), size.getY());
+
+				this.batch.setColor(Color.WHITE);
+
+				this.shapesShader.setUniformi("u_shape", 1);
+				this.shapesShader.setUniformi("u_res", (int) size.getX(), (int) size.getY());
+				this.shapesShader.setUniformi("u_fill", 0);
+				this.shapesShader.setUniformf("u_radius", 0.5f);
+				this.shapesShader.setUniformi("u_thickness", 3);
+
+				this.batch.draw(this.logo, (float) pos.getX(), (float) pos.getY(), (float) scale.getX(), (float) scale.getY(), -1, -1, 1, 1);
+
+				this.batch.end();
 			}
 
 		}
@@ -259,15 +280,24 @@ public class MapEditorScene extends Scene {
 
 	private void drawLogo() {
 		this.batch.begin();
-		float aspect = (float) this.logo.getWidth() / (float) this.logo.getHeight();
+		double boxHeight = this.rainselda.getHeight() / 8.0;
 
-		float widthScale = 640.0f / this.rainselda.getWidth();
-		float heightScale = 480.0f / this.rainselda.getHeight();
+		Mapos scale = affixScale(this.logo, boxHeight);
 
-		float boxHeight = this.rainselda.getHeight() / 8.0f;
-
-		this.batch.draw(this.logo, 0, 480 - boxHeight * heightScale, aspect * boxHeight * widthScale, boxHeight * heightScale);
+		this.batch.setShader(null);
+		this.batch.draw(this.logo, 0, 480 - (float) scale.getY(), (float) scale.getX(), (float) scale.getY());
 		this.batch.end();
+	}
+
+	private Mapos affixScale(Texture texture, double height) {
+		return affixScale((double) texture.getWidth() / (double) texture.getHeight() * height, height);
+	}
+
+	private Mapos affixScale(double width, double height) {
+		double widthScale = 640.0 / (double) this.rainselda.getWidth();
+		double heightScale = 480.0 / (double) this.rainselda.getHeight();
+
+		return new Mapos(width * widthScale, height * heightScale);
 	}
 
 	private void drawColumns() {

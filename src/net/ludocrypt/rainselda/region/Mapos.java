@@ -1,32 +1,38 @@
 package net.ludocrypt.rainselda.region;
 
 public class Mapos {
-    double x;
-    double y;
-    int z;
+	double x;
+	double y;
+	int z;
 
-    public Mapos() {
-    }
+	public Mapos() {
+	}
 
-    public Mapos(double x, double y, int z) {
-        if (z > 2 || z < 0)
-            throw new UnsupportedOperationException("Cannot have a layer outside of the range 0-2");
+	public Mapos(double x, double y) {
+		this.x = x;
+		this.y = y;
+		this.z = 0;
+	}
 
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
+	public Mapos(double x, double y, int z) {
+		if (z > 2 || z < 0)
+			throw new UnsupportedOperationException("Cannot have a layer outside of the range 0-2");
 
-    public double getX() {
-        return x;
-    }
+		this.x = x;
+		this.y = y;
+		this.z = z;
+	}
 
-    public double getY() {
-        return y;
-    }
+	public double getX() {
+		return x;
+	}
 
-    public int getZ() {
-        return z;
-    }
+	public double getY() {
+		return y;
+	}
+
+	public int getZ() {
+		return z;
+	}
 
 }

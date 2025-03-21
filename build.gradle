@@ -49,6 +49,7 @@ dependencies {
 sourceCompatibility = 17
 sourceSets.main.java.srcDirs = [ "src/" ]
 sourceSets.main.resources.srcDirs = ["assets"]
+sourceSets.main.output.classesDirs = files("bin")
 
 project.ext.mainClassName = "net.ludocrypt.rainselda.DesktopLauncher"
 project.ext.assetsDir = new File("assets")
@@ -93,3 +94,10 @@ tasks.register('dist', Jar) {
 }
 
 eclipse.project.name = appName
+
+task printRuntimeClasspath {
+    doLast {
+        sourceSets.main.runtimeClasspath.each { println it }
+    }
+}
+

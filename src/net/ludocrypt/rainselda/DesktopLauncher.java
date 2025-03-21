@@ -7,24 +7,28 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
 // Please note that on macOS your application needs to be started with the -XstartOnFirstThread JVM argument
 public class DesktopLauncher {
 
-    public static void main(String[] arg) {
-        Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
+	public static void main(String[] arg) {
+		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 
-        config.setForegroundFPS(60);
-        config.setTitle("Rainselda");
-        config.setWindowListener(new Lwjgl3WindowAdapter() {
+		config.setForegroundFPS(60);
+		config.setTitle("Rainselda");
+		config.setWindowListener(new Lwjgl3WindowAdapter() {
 
-            @Override
-            public void filesDropped(String[] files) {
-                Rainselda.INSTANCE.filesDropped(files);
-            }
+			@Override
+			public void filesDropped(String[] files) {
+				Rainselda.INSTANCE.filesDropped(files);
+			}
 
-        });
+		});
 
-        config.setWindowIcon("Icon.png", "Icon64.png", "Icon48.png", "Icon32.png", "Icon16.png");
+		config.setWindowIcon("Icon.png", "Icon64.png", "Icon48.png", "Icon32.png", "Icon16.png");
 
-        new Lwjgl3Application(Rainselda.INSTANCE, config);
+		try {
+			new Lwjgl3Application(Rainselda.INSTANCE, config);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
-    }
+	}
 
 }
