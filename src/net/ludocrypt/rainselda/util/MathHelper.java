@@ -3,6 +3,7 @@ package net.ludocrypt.rainselda.util;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -79,7 +80,7 @@ public class MathHelper {
     }
 
     // I hope you fucking die and kill yourself and your family too :smiling_face_with_three_hearts:
-    public static void renderText(SpriteBatch batch, ShaderProgram fontShader, BitmapFont font, double x, double y, double scale, String text) {
+    public static void renderText(SpriteBatch batch, ShaderProgram fontShader, BitmapFont font, double x, double y, double scale, double width, String text, Anchor anchor) {
         batch.begin();
         Matrix4 matBack = batch.getProjectionMatrix().cpy();
         Matrix4 mat = batch.getProjectionMatrix();
@@ -93,7 +94,7 @@ public class MathHelper {
 
         font.getData().setScale((float) scaleX, (float) scaleY);
 
-        double transX = Rainselda.getScreenU(x) / scale;
+        double transX = Rainselda.getScreenU(anchor.worldOffset(x, width)) / scale;
         double transY = Rainselda.getScreenV(y) / scale;
 
         for (int j = 0; j < 2; j++) {
@@ -107,16 +108,57 @@ public class MathHelper {
             for (int k = 0; k < 3; k++) {
                 fontShader.setUniformi("u_colorize", j);
                 fontShader.setUniformi("u_offset", k);
-                font.draw(batch, text, (float) transX, (float) transY);
+
+                font.getCache().clear();
+                GlyphLayout layout = font.getCache().addText(text, 0, 0);
+
+                font.draw(batch, text, (float) anchor.textOffset(transX, layout.width), (float) transY);
                 batch.flush();
             }
         }
 
         batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
+//        font.getCache().clear();
+//        GlyphLayout layout = font.getCache().addText(text, 0, 0);
+//
+//        font.draw(batch, text, (float) anchor.textOffset(transX, layout.width), (float) transY);
+//        batch.flush();
+
         batch.end();
         batch.setShader(null);
         batch.setProjectionMatrix(matBack);
+    }
+
+    public enum Anchor {
+        LEFT, RIGHT, CENTER;
+
+        private double worldOffset(double x, double width) {
+            switch (this) {
+                case CENTER:
+                    return x + width / 2 - 1;
+                case LEFT:
+                    return x;
+                case RIGHT:
+                    return x + width;
+                default:
+                    return x;
+            }
+        }
+
+        private double textOffset(double x, double width) {
+            switch (this) {
+                case CENTER:
+                    return x - width / 2;
+                case LEFT:
+                    return x;
+                case RIGHT:
+                    return x - width;
+                default:
+                    return x;
+            }
+        }
+
     }
 
 }
