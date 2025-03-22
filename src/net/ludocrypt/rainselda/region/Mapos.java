@@ -1,5 +1,7 @@
 package net.ludocrypt.rainselda.region;
 
+import com.badlogic.gdx.math.Matrix4;
+
 public class Mapos {
 	double x;
 	double y;
@@ -39,6 +41,21 @@ public class Mapos {
 
 	public int getZ() {
 		return z;
+	}
+
+	public Mapos mul(Matrix4 mat) {
+		float[] pos = new float[] { (float) x, (float) y, 0, 1 };
+		Matrix4.mulVec(mat.val, pos);
+
+		pos[0] /= pos[3];
+		pos[1] /= pos[3];
+
+		return new Mapos(pos[0], pos[1]);
+	}
+
+	@Override
+	public String toString() {
+		return Double.toString(x) + ", " + Double.toString(y) + ", " + z;
 	}
 
 }

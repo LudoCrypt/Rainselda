@@ -147,7 +147,7 @@ public class MapEditorScene extends Scene {
 				} else if (button == 0) {
 					if (MapEditorScene.this.hasRightClicked) {
 						if (MapEditorScene.this.rightClickIndex(MapEditorScene.this.mapExtraWidgets.length) == 0) {
-							Mapos world = MapEditorScene.this.viewport.worldSpace(new Mapos(x, y));
+							Mapos world = MapEditorScene.this.viewport.worldSpace(ShapeRenderer.unfixScale(new Mapos(x, y)));
 							MapEditorScene.this.region.addRoom(new Room(), world);
 						}
 					}
@@ -192,10 +192,10 @@ public class MapEditorScene extends Scene {
 		this.updateMouseIcon();
 
 		this.drawBackground();
+		this.drawRooms();
 		this.drawColumns();
 		this.drawLogo();
 		this.drawRightClickWidget();
-		this.drawRooms();
 
 		this.stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
 		this.stage.draw();
@@ -285,6 +285,10 @@ public class MapEditorScene extends Scene {
 		if (this.hasRightClicked) {
 
 			// TODO: Theme
+			this.batch.setColor(RenderHelper.hexToColor("141414"));
+			ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, true, this.rightClickX, this.rightClickY - this.mapExtraWidgets.length * this.textSpacingY * 2, this.rightClickWidth, this.mapExtraWidgets.length * this.textSpacingY * 2, 0.2);
+
+			// TODO: Theme
 			this.batch.setColor(RenderHelper.hexToColor("494949"));
 			ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, false, this.rightClickX, this.rightClickY - this.mapExtraWidgets.length * this.textSpacingY * 2, this.rightClickWidth, this.mapExtraWidgets.length * this.textSpacingY * 2, 0.2);
 
@@ -336,15 +340,15 @@ public class MapEditorScene extends Scene {
 		Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
 		Gdx.gl.glScissor((int) (this.columnBoarders[1] + this.xBuffer), (int) this.yBuffer, (int) (this.columnBoarders[2] - this.columnBoarders[1] - this.xBuffer - this.xBuffer), (int) (7.0 * rainselda.getHeight() / 8.0 - this.yBuffer));
 
+		Mapos scale = ShapeRenderer.affixScale(32, 24);
+
 		for (Entry<MapObject, Mapos> entry : this.region.getMap().entrySet()) {
 			MapObject object = entry.getKey();
 			Mapos pos = entry.getValue();
 
-			Mapos scale = ShapeRenderer.affixScale(32, 24);
-
 			if (object instanceof Room room) {
 				this.batch.setColor(Color.WHITE);
-				ShapeRenderer.drawShape(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, false, pos.getX(), pos.getY(), scale.getX(), scale.getY(), 32, 24, 0.5);
+				ShapeRenderer.drawShape(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, false, this.viewport.screenSpaceFix(pos.getX(), pos.getY()), scale.getX(), scale.getY(), 32, 24, 0.5);
 			}
 
 		}
@@ -372,6 +376,9 @@ public class MapEditorScene extends Scene {
 
 		this.rightClickColumn = -1;
 		this.hasRightClicked = false;
+
+//		this.viewport.setMouse(0, 1);
+		this.viewport.pushMouse();
 	}
 
 	@Override

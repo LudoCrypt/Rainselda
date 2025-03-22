@@ -59,11 +59,26 @@ public class ShapeRenderer {
 		return affixScale((double) texture.getWidth() / (double) texture.getHeight() * height, height);
 	}
 
+	public static Mapos affixScale(Mapos size) {
+		return affixScale(size.getX(), size.getY());
+	}
+
 	public static Mapos affixScale(double width, double height) {
 		double widthScale = 640.0 / (double) Rainselda.INSTANCE.getWidth();
 		double heightScale = 480.0 / (double) Rainselda.INSTANCE.getHeight();
 
 		return new Mapos(width * widthScale, height * heightScale);
+	}
+
+	public static Mapos unfixScale(Mapos size) {
+		return unfixScale(size.getX(), size.getY());
+	}
+
+	public static Mapos unfixScale(double width, double height) {
+		double widthScale = width * (double) Rainselda.INSTANCE.getWidth();
+		double heightScale = height * (double) Rainselda.INSTANCE.getHeight();
+
+		return new Mapos(widthScale / 640.0, heightScale / 480.0);
 	}
 
 }

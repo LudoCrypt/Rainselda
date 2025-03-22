@@ -36,11 +36,15 @@ public class Viewport extends InputListener {
 		this.locked = !this.locked;
 	}
 
-	public void setMouse(double x, double y) {
+	public void setMouse(Mapos pos) {
 		if (!this.locked) {
 			this.transMat = new Matrix4();
-			this.transMat.translate((float) x, (float) y, 0);
+			this.transMat.translate((float) pos.getX(), (float) pos.getY(), 0);
 		}
+	}
+
+	public void setMouse(double x, double y) {
+		setMouse(new Mapos(x, y));
 	}
 
 	public void pushMouse() {
@@ -51,7 +55,7 @@ public class Viewport extends InputListener {
 		this.setMouse(0, 0);
 	}
 
-	public void zoom(double x, double y, double zoomScale, int dir) {
+	public void zoom(Mapos pos, double zoomScale, int dir) {
 		if (!locked) {
 			zoomScale += Math.abs(dir / 10.0);
 
@@ -65,15 +69,19 @@ public class Viewport extends InputListener {
 			float translateX = this.mat.val[Matrix4.M03];
 			float translateY = this.mat.val[Matrix4.M13];
 
-			float worldX = ((float) x - translateX) / scaleX;
-			float worldY = ((float) y - translateY) / scaleY;
+			float worldX = ((float) pos.getX() - translateX) / scaleX;
+			float worldY = ((float) pos.getY() - translateY) / scaleY;
 
 			this.mat.val[Matrix4.M00] *= zoomScale;
 			this.mat.val[Matrix4.M11] *= zoomScale;
 
-			this.mat.val[Matrix4.M03] = (float) x - worldX * this.mat.val[Matrix4.M00];
-			this.mat.val[Matrix4.M13] = (float) y - worldY * this.mat.val[Matrix4.M11];
+			this.mat.val[Matrix4.M03] = (float) pos.getX() - worldX * this.mat.val[Matrix4.M00];
+			this.mat.val[Matrix4.M13] = (float) pos.getY() - worldY * this.mat.val[Matrix4.M11];
 		}
+	}
+
+	public void zoom(double x, double y, double zoomScale, int dir) {
+		zoom(new Mapos(x, y), zoomScale, dir);
 	}
 
 	public Matrix4 composeMat(boolean inv) {
@@ -93,27 +101,29 @@ public class Viewport extends InputListener {
 	}
 
 	public Mapos worldSpace(Mapos screenSpace) {
-		Matrix4 invMat = this.composeMat(true);
-
-		float[] pos = new float[] { (float) screenSpace.getX(), (float) screenSpace.getY(), 0, 1 };
-		Matrix4.mulVec(invMat.val, pos);
-
-		pos[0] /= pos[3];
-		pos[1] /= pos[3];
-
-		return new Mapos(pos[0], pos[1]);
+		return screenSpace.mul(this.composeMat(true));
 	}
 
 	public Mapos screenSpace(Mapos worldSpace) {
-		Matrix4 mat = this.composeMat(false);
+		return worldSpace.mul(this.composeMat(false));
+	}
 
-		float[] pos = new float[] { (float) worldSpace.getX(), (float) worldSpace.getY(), 0, 1 };
-		Matrix4.mulVec(mat.val, pos);
+	public Mapos worldSpaceFix(Mapos screenSpace) {
+		screenSpace = screenSpace.mul(this.composeMat(false));
+		screenSpace = ShapeRenderer.unfixScale(screenSpace);
+		screenSpace = screenSpace.mul(this.composeMat(true));
+		return screenSpace;
+	}
 
-		pos[0] /= pos[3];
-		pos[1] /= pos[3];
+	public Mapos screenSpaceFix(Mapos worldSpace) {
+		worldSpace = worldSpace.mul(this.composeMat(false));
+		worldSpace = ShapeRenderer.affixScale(worldSpace);
+		worldSpace = worldSpace.mul(this.composeMat(true));
+		return worldSpace;
+	}
 
-		return new Mapos(pos[0], pos[1]);
+	public Mapos screenSpaceFix(double x, double y) {
+		return screenSpaceFix(new Mapos(x, y));
 	}
 
 	@Override
@@ -134,12 +144,12 @@ public class Viewport extends InputListener {
 
 	@Override
 	public void touchDragged(InputEvent event, float x, float y, int pointer) {
-		this.setMouse(x - this.lastX, y - this.lastY);
+		this.setMouse(ShapeRenderer.unfixScale(x - this.lastX, y - this.lastY));
 	}
 
 	@Override
 	public boolean scrolled(InputEvent event, float x, float y, float amountX, float amountY) {
-		this.zoom(x, y, 1.1, (int) amountY);
+		this.zoom(ShapeRenderer.unfixScale(x, y), 1.1, (int) amountY);
 		return false;
 	}
 
