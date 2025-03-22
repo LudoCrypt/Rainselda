@@ -1,160 +1,146 @@
 package net.ludocrypt.rainselda.render;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.math.Matrix4;
-import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
 
 import net.ludocrypt.rainselda.Rainselda;
+import net.ludocrypt.rainselda.region.Mapos;
 
 /*
  * Controls the camera movement
  */
-public class Viewport extends InputAdapter {
+public class Viewport extends InputListener {
 
-    Rainselda rainselda;
+	Rainselda rainselda;
 
-    Matrix4 mat;
-    Matrix4 transMat;
+	Matrix4 mat;
+	Matrix4 transMat;
 
-    boolean locked;
+	boolean locked;
 
-    int lastX;
-    int lastY;
+	float lastX;
+	float lastY;
 
-    public Viewport(Rainselda rainselda) {
-        this.rainselda = rainselda;
-        this.mat = new Matrix4();
-        this.transMat = new Matrix4();
-    }
+	public Viewport(Rainselda rainselda) {
+		this.rainselda = rainselda;
+		this.mat = new Matrix4();
+		this.transMat = new Matrix4();
+	}
 
-    public void lock() {
-        this.locked = true;
-    }
+	public void lock() {
+		this.locked = true;
+	}
 
-    public void unlock() {
-        this.locked = !this.locked;
-    }
+	public void unlock() {
+		this.locked = !this.locked;
+	}
 
-    public void setMouse(double x, double y) {
-        if (!this.locked) {
-            this.transMat = new Matrix4();
-            this.transMat.translate((float) x, (float) y, 0);
-        }
-    }
+	public void setMouse(double x, double y) {
+		if (!this.locked) {
+			this.transMat = new Matrix4();
+			this.transMat.translate((float) x, (float) y, 0);
+		}
+	}
 
-    public void pushMouse() {
-        Matrix4 mat = new Matrix4();
-        mat.mul(this.transMat);
-        mat.mul(this.mat);
-        this.mat = mat;
-        this.setMouse(0, 0);
-    }
+	public void pushMouse() {
+		Matrix4 mat = new Matrix4();
+		mat.mul(this.transMat);
+		mat.mul(this.mat);
+		this.mat = mat;
+		this.setMouse(0, 0);
+	}
 
-    public void zoom(double x, double y, double zoomScale, int dir) {
-        if (!locked) {
-            zoomScale += Math.abs(dir / 10.0);
+	public void zoom(double x, double y, double zoomScale, int dir) {
+		if (!locked) {
+			zoomScale += Math.abs(dir / 10.0);
 
-            if (dir > 0) {
-                zoomScale = 1 / zoomScale;
-            }
+			if (dir > 0) {
+				zoomScale = 1 / zoomScale;
+			}
 
-            float scaleX = this.mat.val[Matrix4.M00];
-            float scaleY = this.mat.val[Matrix4.M11];
+			float scaleX = this.mat.val[Matrix4.M00];
+			float scaleY = this.mat.val[Matrix4.M11];
 
-            float translateX = this.mat.val[Matrix4.M03];
-            float translateY = this.mat.val[Matrix4.M13];
+			float translateX = this.mat.val[Matrix4.M03];
+			float translateY = this.mat.val[Matrix4.M13];
 
-            float worldX = ((float) x - translateX) / scaleX;
-            float worldY = ((float) y - translateY) / scaleY;
+			float worldX = ((float) x - translateX) / scaleX;
+			float worldY = ((float) y - translateY) / scaleY;
 
-            this.mat.val[Matrix4.M00] *= zoomScale;
-            this.mat.val[Matrix4.M11] *= zoomScale;
+			this.mat.val[Matrix4.M00] *= zoomScale;
+			this.mat.val[Matrix4.M11] *= zoomScale;
 
-            this.mat.val[Matrix4.M03] = (float) x - worldX * this.mat.val[Matrix4.M00];
-            this.mat.val[Matrix4.M13] = (float) y - worldY * this.mat.val[Matrix4.M11];
-        }
-    }
+			this.mat.val[Matrix4.M03] = (float) x - worldX * this.mat.val[Matrix4.M00];
+			this.mat.val[Matrix4.M13] = (float) y - worldY * this.mat.val[Matrix4.M11];
+		}
+	}
 
-    public Matrix4 composeMat(boolean inv) {
-        Matrix4 projMat = new Matrix4();
-        projMat.mul(this.transMat);
-        projMat.mul(this.mat);
+	public Matrix4 composeMat(boolean inv) {
+		Matrix4 projMat = new Matrix4();
+		projMat.mul(this.transMat);
+		projMat.mul(this.mat);
 
-        float scaleY = (float) ((double) this.rainselda.getWidth() / (double) this.rainselda.getHeight());
-        float scaleX = (float) ((double) this.rainselda.getHeight() / (double) this.rainselda.getWidth());
-        projMat.scale(this.rainselda.getHeight() < this.rainselda.getWidth() ? scaleX : 1, this.rainselda.getHeight() > this.rainselda.getWidth() ? scaleY : 1, 1);
+		if (inv) {
+			projMat.inv();
+		}
 
-        projMat.scl(0.01f);
+		return projMat;
+	}
 
-        if (inv) {
-            projMat.inv();
-        }
+	public Matrix4 composeMat() {
+		return this.composeMat(false);
+	}
 
-        return projMat;
-    }
+	public Mapos worldSpace(Mapos screenSpace) {
+		Matrix4 invMat = this.composeMat(true);
 
-    public Matrix4 composeMat() {
-        return this.composeMat(false);
-    }
+		float[] pos = new float[] { (float) screenSpace.getX(), (float) screenSpace.getY(), 0, 1 };
+		Matrix4.mulVec(invMat.val, pos);
 
-    public Vector2 worldSpace(Vector2 screenSpace) {
-        Matrix4 invMat = this.composeMat(true);
+		pos[0] /= pos[3];
+		pos[1] /= pos[3];
 
-        float[] pos = new float[] { screenSpace.x, screenSpace.y, 0, 1 };
-        Matrix4.mulVec(invMat.val, pos);
+		return new Mapos(pos[0], pos[1]);
+	}
 
-        pos[0] /= pos[3];
-        pos[1] /= pos[3];
+	public Mapos screenSpace(Mapos worldSpace) {
+		Matrix4 mat = this.composeMat(false);
 
-        return new Vector2(pos[0], pos[1]);
-    }
+		float[] pos = new float[] { (float) worldSpace.getX(), (float) worldSpace.getY(), 0, 1 };
+		Matrix4.mulVec(mat.val, pos);
 
-    public Vector2 screenSpace(Vector2 worldSpace) {
-        Matrix4 mat = this.composeMat(false);
+		pos[0] /= pos[3];
+		pos[1] /= pos[3];
 
-        float[] pos = new float[] { worldSpace.x, worldSpace.y, 0, 1 };
-        Matrix4.mulVec(mat.val, pos);
+		return new Mapos(pos[0], pos[1]);
+	}
 
-        pos[0] /= pos[3];
-        pos[1] /= pos[3];
+	@Override
+	public boolean touchDown(InputEvent event, float x, float y, int pointer, int button) {
+		if (button == 2) {
+			this.lastX = x;
+			this.lastY = y;
+			return true;
+		}
 
-        return new Vector2(pos[0], pos[1]);
-    }
+		return false;
+	}
 
-    @Override
-    public boolean scrolled(float amountX, float amountY) {
-//        this.zoom(Rainselda.getU() * 2 - 1, Rainselda.getV() * 2 - 1, 1.1, (int) amountY);
-        return false;
-    }
+	@Override
+	public void touchUp(InputEvent event, float x, float y, int pointer, int button) {
+		this.pushMouse();
+	}
 
-    @Override
-    public boolean touchDragged(int screenX, int screenY, int pointer) {
-        if (Gdx.input.isButtonPressed(Input.Buttons.MIDDLE)) {
-            this.setMouse(((screenX - this.lastX) / (double) this.rainselda.getWidth()) * 2, (-((screenY - this.lastY) / (double) this.rainselda.getHeight())) * 2);
-        }
+	@Override
+	public void touchDragged(InputEvent event, float x, float y, int pointer) {
+		this.setMouse(x - this.lastX, y - this.lastY);
+	}
 
-        return false;
-    }
-
-    @Override
-    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        if (button == 2) {
-            this.lastX = screenX;
-            this.lastY = screenY;
-        }
-
-        return false;
-    }
-
-    @Override
-    public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        if (button == 2) {
-            this.pushMouse();
-        }
-
-        return false;
-    }
+	@Override
+	public boolean scrolled(InputEvent event, float x, float y, float amountX, float amountY) {
+		this.zoom(x, y, 1.1, (int) amountY);
+		return false;
+	}
 
 }

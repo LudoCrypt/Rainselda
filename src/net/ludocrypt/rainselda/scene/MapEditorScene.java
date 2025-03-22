@@ -6,12 +6,12 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Cursor.SystemCursor;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -23,9 +23,10 @@ import net.ludocrypt.rainselda.region.MapObject;
 import net.ludocrypt.rainselda.region.Mapos;
 import net.ludocrypt.rainselda.region.Region;
 import net.ludocrypt.rainselda.region.Room;
+import net.ludocrypt.rainselda.render.RenderHelper;
+import net.ludocrypt.rainselda.render.RenderHelper.Anchor;
+import net.ludocrypt.rainselda.render.ShapeRenderer;
 import net.ludocrypt.rainselda.render.Viewport;
-import net.ludocrypt.rainselda.util.MathHelper;
-import net.ludocrypt.rainselda.util.MathHelper.Anchor;
 
 public class MapEditorScene extends Scene {
 
@@ -34,7 +35,6 @@ public class MapEditorScene extends Scene {
 	Rainselda rainselda;
 	SpriteBatch batch;
 	Viewport viewport;
-	ShapeRenderer shapeRenderer;
 
 	Texture logo;
 
@@ -78,8 +78,6 @@ public class MapEditorScene extends Scene {
 		this.rainselda = Rainselda.INSTANCE;
 		this.viewport = new Viewport(rainselda);
 		this.batch = new SpriteBatch();
-		this.shapeRenderer = new ShapeRenderer();
-		this.shapeRenderer.setAutoShapeType(true);
 
 		this.logo = new Texture("Logo.png");
 
@@ -127,7 +125,7 @@ public class MapEditorScene extends Scene {
 				if (this.dragging) {
 					// i love it how the float x up top is FUCKNIG 0-640 GRAHGHHGFJFJFJFJHFHJFHJ fuck you
 					x = Gdx.input.getX();
-					MapEditorScene.this.columnBoarders[this.draggedOffset] = MathHelper.clamp(x, MapEditorScene.this.columnBoarders[this.draggedOffset - 1] + 2 * xBuffer + radius + radius, MapEditorScene.this.columnBoarders[this.draggedOffset + 1] - 2 * xBuffer - radius - radius);
+					MapEditorScene.this.columnBoarders[this.draggedOffset] = RenderHelper.clamp(x, MapEditorScene.this.columnBoarders[this.draggedOffset - 1] + 2 * xBuffer + radius + radius, MapEditorScene.this.columnBoarders[this.draggedOffset + 1] - 2 * xBuffer - radius - radius);
 				}
 			}
 
@@ -141,18 +139,22 @@ public class MapEditorScene extends Scene {
 			@Override
 			public boolean touchDown(InputEvent event, float x, float y, int pointer, int button) {
 				MapEditorScene.this.rightClickColumn = -1;
-				MapEditorScene.this.hasRightClicked = false;
 
 				if (button == 1) {
 					this.clicked = true;
+					MapEditorScene.this.hasRightClicked = false;
 					return true;
 				} else if (button == 0) {
-					if (rightClickIndex(MapEditorScene.this.mapExtraWidgets.length) == 0) {
-						MapEditorScene.this.region.addRoom(new Room(), new Mapos(x, y, 0));
+					if (MapEditorScene.this.hasRightClicked) {
+						if (MapEditorScene.this.rightClickIndex(MapEditorScene.this.mapExtraWidgets.length) == 0) {
+							Mapos world = MapEditorScene.this.viewport.worldSpace(new Mapos(x, y));
+							MapEditorScene.this.region.addRoom(new Room(), world);
+						}
 					}
 				}
 
 				this.clicked = false;
+				MapEditorScene.this.hasRightClicked = false;
 				return false;
 			}
 
@@ -179,6 +181,8 @@ public class MapEditorScene extends Scene {
 			}
 
 		});
+
+		this.stage.addListener(this.viewport);
 	}
 
 	@Override
@@ -191,36 +195,7 @@ public class MapEditorScene extends Scene {
 		this.drawColumns();
 		this.drawLogo();
 		this.drawRightClickWidget();
-
-		for (Entry<MapObject, Mapos> entry : this.region.getMap().entrySet()) {
-			MapObject object = entry.getKey();
-			Mapos pos = entry.getValue();
-
-			if (object instanceof Room room) {
-//				this.shapeRenderer.begin(ShapeType.Line);
-//				MathHelper.drawRoundedRectangle(shapeRenderer, (float) pos.getX(), (float) pos.getY(), 73, 42, 10);
-//				this.shapeRenderer.end();
-
-				this.batch.begin();
-				this.batch.setShader(this.shapesShader);
-
-				Mapos size = new Mapos(32, 24);
-				Mapos scale = affixScale(size.getX(), size.getY());
-
-				this.batch.setColor(Color.WHITE);
-
-				this.shapesShader.setUniformi("u_shape", 1);
-				this.shapesShader.setUniformi("u_res", (int) size.getX(), (int) size.getY());
-				this.shapesShader.setUniformi("u_fill", 0);
-				this.shapesShader.setUniformf("u_radius", 0.5f);
-				this.shapesShader.setUniformi("u_thickness", 3);
-
-				this.batch.draw(this.logo, (float) pos.getX(), (float) pos.getY(), (float) scale.getX(), (float) scale.getY(), -1, -1, 1, 1);
-
-				this.batch.end();
-			}
-
-		}
+		this.drawRooms();
 
 		this.stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
 		this.stage.draw();
@@ -282,57 +257,36 @@ public class MapEditorScene extends Scene {
 		this.batch.begin();
 		double boxHeight = this.rainselda.getHeight() / 8.0;
 
-		Mapos scale = affixScale(this.logo, boxHeight);
+		Mapos scale = ShapeRenderer.affixScale(this.logo, boxHeight);
 
+		this.batch.setColor(Color.WHITE);
 		this.batch.setShader(null);
 		this.batch.draw(this.logo, 0, 480 - (float) scale.getY(), (float) scale.getX(), (float) scale.getY());
 		this.batch.end();
 	}
 
-	private Mapos affixScale(Texture texture, double height) {
-		return affixScale((double) texture.getWidth() / (double) texture.getHeight() * height, height);
-	}
-
-	private Mapos affixScale(double width, double height) {
-		double widthScale = 640.0 / (double) this.rainselda.getWidth();
-		double heightScale = 480.0 / (double) this.rainselda.getHeight();
-
-		return new Mapos(width * widthScale, height * heightScale);
-	}
-
 	private void drawColumns() {
-		this.shapeRenderer.begin(ShapeType.Line);
+		double boxHeight = (7.0 * rainselda.getHeight() / 8.0) - this.yBuffer;
 
-		// TODO: Theme
-		this.shapeRenderer.setColor(MathHelper.hexToColor("494949"));
-
-		float boxHeight = (7.0f * rainselda.getHeight() / 8.0f) - this.yBuffer;
-
+		this.batch.setColor(RenderHelper.hexToColor("494949"));
 		for (int i = 0; i < 3; i++) {
-			MathHelper.drawRoundedRectangle(this.shapeRenderer, this.columnBoarders[i] + this.xBuffer, this.yBuffer, (this.columnBoarders[i + 1] - this.columnBoarders[i]) - 2 * this.xBuffer, boxHeight, this.radius);
+			ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT_FIXED, 2, false, this.columnBoarders[i] + this.xBuffer, this.yBuffer, (this.columnBoarders[i + 1] - this.columnBoarders[i]) - 2 * this.xBuffer, boxHeight, this.radius * 2);
 		}
 
-		this.shapeRenderer.end();
 	}
 
 	private void drawBackground() {
-		this.shapeRenderer.begin(ShapeType.Filled);
-
 		// TODO: Theme
-		this.shapeRenderer.setColor(MathHelper.hexToColor("141414"));
-		this.shapeRenderer.rect(0, 0, rainselda.getWidth(), rainselda.getHeight());
-
-		this.shapeRenderer.end();
+		this.batch.setColor(RenderHelper.hexToColor("141414"));
+		ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_RECT, 2, true, 0, 0, this.rainselda.getWidth(), this.rainselda.getHeight(), 0.0);
 	}
 
 	private void drawRightClickWidget() {
 		if (this.hasRightClicked) {
 
-			this.shapeRenderer.begin(ShapeType.Line);
-
-			MathHelper.drawRoundedRectangle(this.shapeRenderer, this.rightClickX, this.rightClickY - this.mapExtraWidgets.length * this.textSpacingY * 2, this.rightClickWidth, this.mapExtraWidgets.length * this.textSpacingY * 2, 5);
-
-			this.shapeRenderer.end();
+			// TODO: Theme
+			this.batch.setColor(RenderHelper.hexToColor("494949"));
+			ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, false, this.rightClickX, this.rightClickY - this.mapExtraWidgets.length * this.textSpacingY * 2, this.rightClickWidth, this.mapExtraWidgets.length * this.textSpacingY * 2, 0.2);
 
 			int i = 0;
 			for (String option : this.mapExtraWidgets) {
@@ -346,7 +300,7 @@ public class MapEditorScene extends Scene {
 					font.setColor(Color.WHITE);
 				}
 
-				MathHelper.renderText(batch, fontShader, font, transX, transY, 0.25, this.rightClickWidth, option, Anchor.CENTER);
+				RenderHelper.renderText(batch, fontShader, font, transX, transY, 0.25, this.rightClickWidth, option, Anchor.CENTER);
 
 				i++;
 			}
@@ -374,12 +328,34 @@ public class MapEditorScene extends Scene {
 		return -1;
 	}
 
+	private void drawRooms() {
+		Matrix4 projMat = this.batch.getProjectionMatrix().cpy();
+
+		this.batch.getProjectionMatrix().mul(this.viewport.composeMat());
+
+		Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
+		Gdx.gl.glScissor((int) (this.columnBoarders[1] + this.xBuffer), (int) this.yBuffer, (int) (this.columnBoarders[2] - this.columnBoarders[1] - this.xBuffer - this.xBuffer), (int) (7.0 * rainselda.getHeight() / 8.0 - this.yBuffer));
+
+		for (Entry<MapObject, Mapos> entry : this.region.getMap().entrySet()) {
+			MapObject object = entry.getKey();
+			Mapos pos = entry.getValue();
+
+			Mapos scale = ShapeRenderer.affixScale(32, 24);
+
+			if (object instanceof Room room) {
+				this.batch.setColor(Color.WHITE);
+				ShapeRenderer.drawShape(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, false, pos.getX(), pos.getY(), scale.getX(), scale.getY(), 32, 24, 0.5);
+			}
+
+		}
+
+		Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
+
+		this.batch.setProjectionMatrix(projMat);
+	}
+
 	@Override
 	public void resize(int width, int height) {
-		// For some reason the projection matrix only gets set once so this just updates it to match the current resolution
-		this.shapeRenderer.getProjectionMatrix().setToOrtho2D(0, 0, width, height);
-		this.shapeRenderer.updateMatrices();
-
 		// istg if another one of these things doesnt do it automatically im gonna kill somepony
 		this.stage.getViewport().setScreenBounds(0, 0, width, height);
 
@@ -401,8 +377,11 @@ public class MapEditorScene extends Scene {
 	@Override
 	public void dispose() {
 		this.batch.dispose();
-		this.shapeRenderer.dispose();
 		this.stage.dispose();
+		this.font.dispose();
+		this.fontShader.dispose();
+		this.logo.dispose();
+		this.shapesShader.dispose();
 	}
 
 	@Override

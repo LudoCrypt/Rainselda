@@ -49,6 +49,8 @@ void main() {
         d = rect(qcoord, vec2(u_res));
     } else if (u_shape == 1) {
         d = roundRect(qcoord, vec2(u_res), u_radius * min(u_res.x, u_res.y));
+    } else if (u_shape == 2) {
+        d = roundRect(qcoord, vec2(u_res), u_radius);
     }
 
     int fillCheck = (-d <= float(u_thickness)) ? 1 : 0;
@@ -62,5 +64,5 @@ void main() {
         return;
     }
 
-	gl_FragColor = vec4(0.5);
+	gl_FragColor = vec4(0.0);
 }
