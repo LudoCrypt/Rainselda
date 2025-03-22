@@ -110,14 +110,14 @@ public class Viewport extends InputListener {
 
 	public Mapos worldSpaceFix(Mapos screenSpace) {
 		screenSpace = screenSpace.mul(this.composeMat(false));
-		screenSpace = ShapeRenderer.unfixScale(screenSpace);
+		screenSpace = ShapeRenderer.unfixScaleCentered(screenSpace);
 		screenSpace = screenSpace.mul(this.composeMat(true));
 		return screenSpace;
 	}
 
 	public Mapos screenSpaceFix(Mapos worldSpace) {
 		worldSpace = worldSpace.mul(this.composeMat(false));
-		worldSpace = ShapeRenderer.affixScale(worldSpace);
+		worldSpace = ShapeRenderer.affixScaleCentered(worldSpace);
 		worldSpace = worldSpace.mul(this.composeMat(true));
 		return worldSpace;
 	}
@@ -149,7 +149,7 @@ public class Viewport extends InputListener {
 
 	@Override
 	public boolean scrolled(InputEvent event, float x, float y, float amountX, float amountY) {
-		this.zoom(ShapeRenderer.unfixScale(x, y), 1.1, (int) amountY);
+		this.zoom(ShapeRenderer.unfixScaleCentered(x, y), 1.1, (int) amountY);
 		return false;
 	}
 

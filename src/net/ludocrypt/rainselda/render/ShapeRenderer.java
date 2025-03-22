@@ -70,6 +70,14 @@ public class ShapeRenderer {
 		return new Mapos(width * widthScale, height * heightScale);
 	}
 
+	public static Mapos affixScaleCentered(Mapos size) {
+		return affixScaleCentered(size.getX(), size.getY());
+	}
+
+	public static Mapos affixScaleCentered(double width, double height) {
+		return affixScale(width - 320, height - 240).add(320, 240);
+	}
+
 	public static Mapos unfixScale(Mapos size) {
 		return unfixScale(size.getX(), size.getY());
 	}
@@ -79,6 +87,14 @@ public class ShapeRenderer {
 		double heightScale = height * (double) Rainselda.INSTANCE.getHeight();
 
 		return new Mapos(widthScale / 640.0, heightScale / 480.0);
+	}
+
+	public static Mapos unfixScaleCentered(double width, double height) {
+		return unfixScale(width - 320, height - 240).add(320, 240);
+	}
+
+	public static Mapos unfixScaleCentered(Mapos size) {
+		return unfixScaleCentered(size.getX(), size.getY());
 	}
 
 }

@@ -147,7 +147,7 @@ public class MapEditorScene extends Scene {
 				} else if (button == 0) {
 					if (MapEditorScene.this.hasRightClicked) {
 						if (MapEditorScene.this.rightClickIndex(MapEditorScene.this.mapExtraWidgets.length) == 0) {
-							Mapos world = MapEditorScene.this.viewport.worldSpace(ShapeRenderer.unfixScale(new Mapos(x, y)));
+							Mapos world = MapEditorScene.this.viewport.worldSpace(ShapeRenderer.unfixScaleCentered(new Mapos(x, y)));
 							MapEditorScene.this.region.addRoom(new Room(), world);
 						}
 					}

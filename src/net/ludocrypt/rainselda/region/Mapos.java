@@ -53,6 +53,65 @@ public class Mapos {
 		return new Mapos(pos[0], pos[1]);
 	}
 
+	public Mapos add(Mapos other) {
+		return new Mapos(x + other.x, y + other.y);
+	}
+
+	public Mapos subtract(Mapos other) {
+		return new Mapos(x - other.x, y - other.y);
+	}
+
+	public Mapos add(double xOther, double yOther) {
+		return new Mapos(x + xOther, y + yOther);
+	}
+
+	public Mapos subtract(double xOther, double yOther) {
+		return new Mapos(x - xOther, y - yOther);
+	}
+
+	public Mapos scale(double factor) {
+		return new Mapos(x * factor, y * factor);
+	}
+
+	public Mapos multiply(Mapos other) {
+		return new Mapos(x * other.x, y * other.y);
+	}
+
+	public Mapos negate() {
+		return new Mapos(-x, -y);
+	}
+
+	public double dot(Mapos other) {
+		return x * other.x + y * other.y;
+	}
+
+	public double magnitude() {
+		return Math.sqrt(this.dot(this));
+	}
+
+	public Mapos normalize() {
+		double mag = magnitude();
+		return mag == 0 ? this : scale(1.0 / mag);
+	}
+
+	public Mapos lerp(Mapos other, double t) {
+		return new Mapos(x + (other.x - x) * t, y + (other.y - y) * t);
+	}
+
+	public Mapos lerp(double xOther, double yOther, double t) {
+		return new Mapos(x + (xOther - x) * t, y + (yOther - y) * t);
+	}
+
+	public Mapos perpendicular() {
+		return new Mapos(-y, x);
+	}
+
+	public double distance(Mapos other) {
+		double dx = x - other.x;
+		double dy = y - other.y;
+		return Math.sqrt(dx * dx + dy * dy);
+	}
+
 	@Override
 	public String toString() {
 		return Double.toString(x) + ", " + Double.toString(y) + ", " + z;
