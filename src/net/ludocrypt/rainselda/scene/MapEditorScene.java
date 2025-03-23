@@ -65,6 +65,8 @@ public class MapEditorScene extends Scene {
 	// TODO: Un-hardcode
 	int rightClickWidth;
 
+	boolean awaitingRoom;
+
 	String[] mapExtraWidgets = new String[] { "Add Room", "Add Note", "Add Death", "Add Life", "Add Piss", "Add Shit" };
 
 	public MapEditorScene(Region region) {
@@ -147,9 +149,12 @@ public class MapEditorScene extends Scene {
 				} else if (button == 0) {
 					if (MapEditorScene.this.hasRightClicked) {
 						if (MapEditorScene.this.rightClickIndex(MapEditorScene.this.mapExtraWidgets.length) == 0) {
-							Mapos world = MapEditorScene.this.viewport.worldSpace(ShapeRenderer.unfixScaleCentered(new Mapos(x, y)));
-							MapEditorScene.this.region.addRoom(new Room(), world);
+
+							MapEditorScene.this.awaitingRoom = true;
 						}
+					} else if (MapEditorScene.this.awaitingRoom) {
+						Mapos world = MapEditorScene.this.viewport.worldSpace(ShapeRenderer.unfixScaleCentered(new Mapos(x, y)));
+						MapEditorScene.this.region.addRoom(new Room(), world);
 					}
 				}
 
@@ -340,22 +345,27 @@ public class MapEditorScene extends Scene {
 		Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
 		Gdx.gl.glScissor((int) (this.columnBoarders[1] + this.xBuffer), (int) this.yBuffer, (int) (this.columnBoarders[2] - this.columnBoarders[1] - this.xBuffer - this.xBuffer), (int) (7.0 * rainselda.getHeight() / 8.0 - this.yBuffer));
 
-		Mapos scale = ShapeRenderer.affixScale(32, 24);
-
 		for (Entry<MapObject, Mapos> entry : this.region.getMap().entrySet()) {
 			MapObject object = entry.getKey();
 			Mapos pos = entry.getValue();
 
 			if (object instanceof Room room) {
 				this.batch.setColor(Color.WHITE);
-				ShapeRenderer.drawShape(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, false, this.viewport.screenSpaceFix(pos.getX(), pos.getY()), scale.getX(), scale.getY(), 32, 24, 0.5);
+				drawRoom(pos);
 			}
 
 		}
 
+		drawRoom(this.viewport.worldSpace(ShapeRenderer.unfixScaleCentered(this.rainselda.mouse())));
+
 		Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
 
 		this.batch.setProjectionMatrix(projMat);
+	}
+
+	private void drawRoom(Mapos pos) {
+		Mapos scale = ShapeRenderer.affixScale(32, 24);
+		ShapeRenderer.drawShape(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, false, this.viewport.screenSpaceFix(pos.getX(), pos.getY()).sub(scale.mul(0.5)), scale.getX(), scale.getY(), 32, 24, 0.5);
 	}
 
 	@Override

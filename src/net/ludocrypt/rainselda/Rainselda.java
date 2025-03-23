@@ -10,7 +10,9 @@ import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import net.harawata.appdirs.AppDirsFactory;
+import net.ludocrypt.rainselda.region.Mapos;
 import net.ludocrypt.rainselda.region.Region;
+import net.ludocrypt.rainselda.render.ShapeRenderer;
 import net.ludocrypt.rainselda.scene.MapEditorScene;
 import net.ludocrypt.rainselda.scene.Scene;
 
@@ -159,12 +161,16 @@ public class Rainselda extends ApplicationAdapter {
 		return height;
 	}
 
-	public float getAspectRatio() {
+	public double getAspectRatio() {
 		return getAspectRatio(false);
 	}
 
-	public float getAspectRatio(boolean inv) {
-		return inv ? ((float) height / (float) width) : ((float) width / (float) height);
+	public double getAspectRatio(boolean inv) {
+		return inv ? ((double) height / (double) width) : ((double) width / (double) height);
+	}
+
+	public Mapos mouse() {
+		return new Mapos(ShapeRenderer.affixScale(Gdx.input.getX(), height - Gdx.input.getY()));
 	}
 
 	public void filesDropped(String[] files) {

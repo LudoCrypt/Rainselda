@@ -57,7 +57,7 @@ public class Mapos {
 		return new Mapos(x + other.x, y + other.y);
 	}
 
-	public Mapos subtract(Mapos other) {
+	public Mapos sub(Mapos other) {
 		return new Mapos(x - other.x, y - other.y);
 	}
 
@@ -65,19 +65,19 @@ public class Mapos {
 		return new Mapos(x + xOther, y + yOther);
 	}
 
-	public Mapos subtract(double xOther, double yOther) {
+	public Mapos sub(double xOther, double yOther) {
 		return new Mapos(x - xOther, y - yOther);
 	}
 
-	public Mapos scale(double factor) {
+	public Mapos mul(double factor) {
 		return new Mapos(x * factor, y * factor);
 	}
 
-	public Mapos multiply(Mapos other) {
+	public Mapos mul(Mapos other) {
 		return new Mapos(x * other.x, y * other.y);
 	}
 
-	public Mapos negate() {
+	public Mapos neg() {
 		return new Mapos(-x, -y);
 	}
 
@@ -91,7 +91,7 @@ public class Mapos {
 
 	public Mapos normalize() {
 		double mag = magnitude();
-		return mag == 0 ? this : scale(1.0 / mag);
+		return mag == 0 ? this : mul(1.0 / mag);
 	}
 
 	public Mapos lerp(Mapos other, double t) {
