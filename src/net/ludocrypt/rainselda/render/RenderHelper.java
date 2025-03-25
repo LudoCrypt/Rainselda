@@ -1,13 +1,14 @@
 package net.ludocrypt.rainselda.render;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShaderProgram;
-import com.badlogic.gdx.math.Matrix4;
 
+import io.github.humbleui.skija.Canvas;
+import io.github.humbleui.skija.DirectContext;
+import io.github.humbleui.skija.Font;
+import io.github.humbleui.skija.Paint;
+import io.github.humbleui.skija.TextBlob;
+import io.github.humbleui.skija.shaper.Shaper;
+import io.github.humbleui.types.Rect;
 import net.ludocrypt.rainselda.Rainselda;
 import net.ludocrypt.rainselda.region.Mapos;
 
@@ -44,80 +45,65 @@ public class RenderHelper {
 		return new Color(fr, fg, fb, fa);
 	}
 
-	// I hope you fucking die and kill yourself and your family too :smiling_face_with_three_hearts:
-	public static void renderText(SpriteBatch batch, ShaderProgram fontShader, BitmapFont font, double x, double y, double scale, double width, String text, Anchor anchor) {
-		batch.begin();
-		Matrix4 matBack = batch.getProjectionMatrix().cpy();
-		Matrix4 mat = batch.getProjectionMatrix();
+	public static Paint paint(Color color) {
+		return new Paint().setColor(Color.rgba8888(color.a, color.r, color.g, color.b));
+	}
 
-		mat.scl((float) scale);
+	public static void renderText(DirectContext ctx, Canvas canvas, Font font, Paint paint, String text, double x, double y, double boxWidth, double boxHeight, Anchor anchor) {
+		TextBlob blob = Shaper.make().shape(text, font);
 
-		batch.setShader(fontShader);
-
-		Mapos fontScale = ShapeRenderer.affixScale(1, 1);
-
-		font.getData().setScale((float) fontScale.getX(), (float) fontScale.getY());
-
-		double transX = Rainselda.getScreenU(anchor.worldOffset(x, width)) / scale;
-		double transY = Rainselda.getScreenV(y) / scale;
-
-		for (int j = 0; j < 2; j++) {
-
-			if (j == 0) {
-				batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-			} else {
-				batch.setBlendFunctionSeparate(GL20.GL_SRC_ALPHA, GL20.GL_ONE, GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-			}
-
-			for (int k = 0; k < 3; k++) {
-				fontShader.setUniformi("u_colorize", j);
-				fontShader.setUniformi("u_offset", k);
-
-				font.getCache().clear();
-				GlyphLayout layout = font.getCache().addText(text, 0, 0);
-
-				font.draw(batch, text, (float) anchor.textOffset(transX, layout.width), (float) transY);
-				batch.flush();
-			}
+		if (blob != null) {
+			Rect bounds = font.measureText(text);
+			Mapos pos = anchor.anchor(new Mapos(boxWidth, boxHeight), new Mapos(bounds.getWidth(), bounds.getHeight())).add(x, y);
+			canvas.drawTextBlob(blob, (float) pos.getX(), (float) (Rainselda.INSTANCE.getHeight() - pos.getY()), paint);
 		}
 
-		batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-
-		batch.end();
-		batch.setShader(null);
-		batch.setProjectionMatrix(matBack);
+		ctx.flush();
+		ctx.resetGLAll();
 	}
 
 	public enum Anchor {
-		LEFT,
-		RIGHT,
-		CENTER;
+		TOP_LEFT(0, 0),
+		TOP(1, 0),
+		TOP_RIGHT(2, 0),
+		LEFT(0, 1),
+		CENTER(1, 1),
+		RIGHT(2, 1),
+		BOTTOM_LEFT(0, 2),
+		BOTTOM(1, 2),
+		BOTTOM_RIGHT(2, 2);
 
-		private double worldOffset(double x, double width) {
-			switch (this) {
-				case CENTER:
-					return x + width / 2 - 1;
-				case LEFT:
-					return x;
-				case RIGHT:
-					return x + width;
-				default:
-					return x;
-			}
+		int ax;
+		int ay;
+
+		private Anchor(int ax, int ay) {
+			this.ax = ax;
+			this.ay = ay;
 		}
 
-		private double textOffset(double x, double width) {
-			switch (this) {
-				case CENTER:
-					return x - width / 2;
-				case LEFT:
-					return x;
-				case RIGHT:
-					return x - width;
-				default:
-					return x;
-			}
+		// Anchor's both the X and Y coordinates
+		public Mapos anchor(Mapos shapeBounds, Mapos textBounds) {
+			return new Mapos(anchorX(shapeBounds.getX(), textBounds.getX()), anchorY(shapeBounds.getY(), textBounds.getY()));
 		}
+
+		private double anchorX(double shapeBound, double textBound) {
+			return switch (ax) {
+				case 0 -> 0;
+				case 1 -> shapeBound / 2.0 - textBound / 2.0;
+				case 2 -> shapeBound - textBound;
+				default -> throw new IllegalArgumentException("Unexpected value: " + ax);
+			};
+		}
+
+		private double anchorY(double shapeBound, double textBound) {
+			return switch (ay) {
+				case 0 -> textBound / 2.0;
+				case 1 -> textBound - shapeBound / 2.0;
+				case 2 -> -shapeBound + 3.0 * textBound / 2.0;
+				default -> throw new IllegalArgumentException("Unexpected value: " + ay);
+			};
+		}
+
 	}
 
 }

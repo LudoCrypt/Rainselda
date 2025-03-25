@@ -23,6 +23,7 @@ ext {
 	aiVersion = '1.8.2'
 	gdxControllersVersion = '2.2.1'
 	appdirsVersion = '1.4.0'
+	skijaVersion = '0.116.4'
 }
 
 repositories {
@@ -36,13 +37,14 @@ repositories {
 }
 
 dependencies {
-    api "com.badlogicgames.gdx:gdx:$gdxVersion"
-    api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
-    api "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
-    api "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
-    api "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
-    api "com.badlogicgames.gdx-controllers:gdx-controllers-desktop:$gdxControllersVersion"
-    api "com.badlogicgames.gdx-controllers:gdx-controllers-core:$gdxControllersVersion"
+	api "com.badlogicgames.gdx:gdx:$gdxVersion"
+	api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+	api "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+	api "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+	api "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
+	api "com.badlogicgames.gdx-controllers:gdx-controllers-desktop:$gdxControllersVersion"
+	api "com.badlogicgames.gdx-controllers:gdx-controllers-core:$gdxControllersVersion"
+	api "io.github.humbleui:skija-windows-x64:$skijaVersion"
 	api "net.harawata:appdirs:$appdirsVersion"
 }
 
@@ -57,47 +59,47 @@ project.ext.assetsDir = new File("assets")
 import org.gradle.internal.os.OperatingSystem
 
 tasks.register('run', JavaExec) {
-    dependsOn classes
-    mainClass = project.mainClassName
-    classpath = sourceSets.main.runtimeClasspath
-    standardInput = System.in
-    workingDir = project.assetsDir
-    ignoreExitValue = true
+	dependsOn classes
+	mainClass = project.mainClassName
+	classpath = sourceSets.main.runtimeClasspath
+	standardInput = System.in
+	workingDir = project.assetsDir
+	ignoreExitValue = true
 
-    if (OperatingSystem.current() == OperatingSystem.MAC_OS) {
-        // Required to run on macOS
-        jvmArgs += "-XstartOnFirstThread"
-    }
+	if (OperatingSystem.current() == OperatingSystem.MAC_OS) {
+		// Required to run on macOS
+		jvmArgs += "-XstartOnFirstThread"
+	}
 }
 
 tasks.register('debug', JavaExec) {
-    dependsOn classes
-    mainClass = project.mainClassName
-    classpath = sourceSets.main.runtimeClasspath
-    standardInput = System.in
-    workingDir = project.assetsDir
-    ignoreExitValue = true
-    debug = true
+	dependsOn classes
+	mainClass = project.mainClassName
+	classpath = sourceSets.main.runtimeClasspath
+	standardInput = System.in
+	workingDir = project.assetsDir
+	ignoreExitValue = true
+	debug = true
 }
 
 tasks.register('dist', Jar) {
 	dependsOn classes
-    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
-    manifest {
-        attributes 'Main-Class': project.mainClassName
-    }
-    dependsOn configurations.runtimeClasspath
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
-    with jar
+	duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+	manifest {
+		attributes 'Main-Class': project.mainClassName
+	}
+	dependsOn configurations.runtimeClasspath
+	from {
+		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+	}
+	with jar
 }
 
 eclipse.project.name = appName
 
 task printRuntimeClasspath {
-    doLast {
-        sourceSets.main.runtimeClasspath.each { println it }
-    }
+	doLast {
+		sourceSets.main.runtimeClasspath.each { println it }
+	}
 }
 

@@ -8,7 +8,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Cursor.SystemCursor;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.Matrix4;
@@ -18,6 +17,13 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
+import io.github.humbleui.skija.Canvas;
+import io.github.humbleui.skija.DirectContext;
+import io.github.humbleui.skija.Font;
+import io.github.humbleui.skija.FontEdging;
+import io.github.humbleui.skija.FontStyle;
+import io.github.humbleui.skija.Paint;
+import io.github.humbleui.skija.Typeface;
 import net.ludocrypt.rainselda.Rainselda;
 import net.ludocrypt.rainselda.region.MapObject;
 import net.ludocrypt.rainselda.region.Mapos;
@@ -39,8 +45,8 @@ public class MapEditorScene extends Scene {
 	Texture logo;
 
 	// TODO: Theme
-	BitmapFont font;
-	ShaderProgram fontShader;
+	Typeface typeface;
+	Font font;
 
 	ShaderProgram shapesShader;
 
@@ -52,7 +58,7 @@ public class MapEditorScene extends Scene {
 	float radius = 10;
 
 	float textSpacingX = 5;
-	float textSpacingY = 10;
+	float textSpacingY = 25;
 
 	// The boarder lines for the like three main columns idk
 	float[] columnBoarders = new float[4];
@@ -83,10 +89,11 @@ public class MapEditorScene extends Scene {
 
 		this.logo = new Texture("Logo.png");
 
-		this.font = new BitmapFont(Gdx.files.internal("fonts/Carlito-Regular.fnt"));
-		this.font.setUseIntegerPositions(false);
+		this.typeface = Typeface.makeFromName("Segoe UI", FontStyle.NORMAL);
+		this.font = new Font(this.typeface, 13);
+		this.font.setSubpixel(true);
+		this.font.setEdging(FontEdging.SUBPIXEL_ANTI_ALIAS);
 
-		this.fontShader = new ShaderProgram(Gdx.files.internal("shaders/msdf.vsh"), Gdx.files.internal("shaders/msdf.fsh"));
 		this.shapesShader = new ShaderProgram(Gdx.files.internal("shaders/shapes.vsh"), Gdx.files.internal("shaders/shapes.fsh"));
 
 		this.stage = new Stage(new ScreenViewport());
@@ -171,7 +178,7 @@ public class MapEditorScene extends Scene {
 						MapEditorScene.this.hasRightClicked = true;
 						MapEditorScene.this.rightClickX = Gdx.input.getX();
 						MapEditorScene.this.rightClickY = MapEditorScene.this.rainselda.getHeight() - Gdx.input.getY();
-						MapEditorScene.this.rightClickWidth = 65;
+						MapEditorScene.this.rightClickWidth = 80;
 						return;
 					}
 				}
@@ -191,7 +198,7 @@ public class MapEditorScene extends Scene {
 	}
 
 	@Override
-	public void render() {
+	public void skijaRender(DirectContext ctx, Canvas canvas) {
 		ScreenUtils.clear(0, 0, 0, 1);
 
 		this.updateMouseIcon();
@@ -200,11 +207,10 @@ public class MapEditorScene extends Scene {
 		this.drawRooms();
 		this.drawColumns();
 		this.drawLogo();
-		this.drawRightClickWidget();
+		this.drawRightClickWidget(ctx, canvas);
 
 		this.stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
 		this.stage.draw();
-
 	}
 
 	private int columnWallIndex() {
@@ -286,30 +292,33 @@ public class MapEditorScene extends Scene {
 		ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_RECT, 2, true, 0, 0, this.rainselda.getWidth(), this.rainselda.getHeight(), 0.0);
 	}
 
-	private void drawRightClickWidget() {
+	private void drawRightClickWidget(DirectContext ctx, Canvas canvas) {
 		if (this.hasRightClicked) {
+
+			double bW = this.rightClickWidth;
+			double bH = this.mapExtraWidgets.length * this.textSpacingY;
 
 			// TODO: Theme
 			this.batch.setColor(RenderHelper.hexToColor("141414"));
-			ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, true, this.rightClickX, this.rightClickY - this.mapExtraWidgets.length * this.textSpacingY * 2, this.rightClickWidth, this.mapExtraWidgets.length * this.textSpacingY * 2, 0.2);
+			ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, true, this.rightClickX, this.rightClickY - this.mapExtraWidgets.length * this.textSpacingY, bW, bH, 0.2);
 
 			// TODO: Theme
 			this.batch.setColor(RenderHelper.hexToColor("494949"));
-			ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, false, this.rightClickX, this.rightClickY - this.mapExtraWidgets.length * this.textSpacingY * 2, this.rightClickWidth, this.mapExtraWidgets.length * this.textSpacingY * 2, 0.2);
+			ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, false, this.rightClickX, this.rightClickY - this.mapExtraWidgets.length * this.textSpacingY, bW, bH, 0.2);
 
 			int i = 0;
 			for (String option : this.mapExtraWidgets) {
 				double transX = this.rightClickX;
-				double transY = this.rightClickY - i * this.textSpacingY * 2 - this.textSpacingY + 4;
+				double transY = this.rightClickY - i * this.textSpacingY;
+
+				Paint paint = RenderHelper.paint(Color.WHITE);
 
 				// TODO: Theme
 				if (rightClickIndex(this.mapExtraWidgets.length) == i) {
-					font.setColor(Color.GREEN);
-				} else {
-					font.setColor(Color.WHITE);
+					paint = RenderHelper.paint(Color.GREEN);
 				}
 
-				RenderHelper.renderText(batch, fontShader, font, transX, transY, 0.25, this.rightClickWidth, option, Anchor.CENTER);
+				RenderHelper.renderText(ctx, canvas, this.font, paint, option, transX, transY, this.rightClickWidth, this.textSpacingY, Anchor.CENTER);
 
 				i++;
 			}
@@ -328,7 +337,7 @@ public class MapEditorScene extends Scene {
 			return -1;
 		}
 
-		int index = (int) Math.floor(-(y - this.rightClickY) / (this.textSpacingY * 2));
+		int index = (int) Math.floor(-(y - this.rightClickY) / (this.textSpacingY));
 
 		if (index >= 0 && index < options) {
 			return index;
@@ -387,7 +396,6 @@ public class MapEditorScene extends Scene {
 		this.rightClickColumn = -1;
 		this.hasRightClicked = false;
 
-//		this.viewport.setMouse(0, 1);
 		this.viewport.pushMouse();
 	}
 
@@ -395,8 +403,6 @@ public class MapEditorScene extends Scene {
 	public void dispose() {
 		this.batch.dispose();
 		this.stage.dispose();
-		this.font.dispose();
-		this.fontShader.dispose();
 		this.logo.dispose();
 		this.shapesShader.dispose();
 	}

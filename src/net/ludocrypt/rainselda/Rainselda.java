@@ -6,9 +6,18 @@ import java.io.File;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.InputAdapter;
-import com.badlogic.gdx.utils.ScreenUtils;
 
+import io.github.humbleui.skija.BackendRenderTarget;
+import io.github.humbleui.skija.Canvas;
+import io.github.humbleui.skija.ColorSpace;
+import io.github.humbleui.skija.DirectContext;
+import io.github.humbleui.skija.FramebufferFormat;
+import io.github.humbleui.skija.PixelGeometry;
+import io.github.humbleui.skija.Surface;
+import io.github.humbleui.skija.SurfaceColorFormat;
+import io.github.humbleui.skija.SurfaceOrigin;
+import io.github.humbleui.skija.SurfaceProps;
+import io.github.humbleui.skija.impl.Library;
 import net.harawata.appdirs.AppDirsFactory;
 import net.ludocrypt.rainselda.region.Mapos;
 import net.ludocrypt.rainselda.region.Region;
@@ -24,141 +33,74 @@ public class Rainselda extends ApplicationAdapter {
 
 	private Scene currentScene;
 
+	private DirectContext context;
+	private BackendRenderTarget renderTarget;
+	private Surface surface;
+	private Canvas canvas;
+
 	public Rainselda() {
-		currentScene = new MapEditorScene(new Region());
+		this.currentScene = new MapEditorScene(new Region());
+	}
+
+	private void initSkia() {
+		if (this.surface != null) {
+			this.surface.close();
+		}
+
+		if (this.renderTarget != null) {
+			this.renderTarget.close();
+		}
+
+		this.renderTarget = BackendRenderTarget.makeGL(this.width, this.height, 0, 8, 0, FramebufferFormat.GR_GL_RGBA8);
+		this.surface = Surface.wrapBackendRenderTarget(this.context, this.renderTarget, SurfaceOrigin.BOTTOM_LEFT, SurfaceColorFormat.RGBA_8888, ColorSpace.getDisplayP3(), new SurfaceProps(PixelGeometry.RGB_H));
+		this.canvas = this.surface.getCanvas();
 	}
 
 	@Override
 	public void create() {
-		getCurrentScene().create();
-
-		Gdx.input.setInputProcessor(new InputAdapter() {
-
-			@Override
-			public boolean keyDown(int keycode) {
-				if (getCurrentScene().getAdapter() != null) {
-					return getCurrentScene().getAdapter().keyDown(keycode);
-				}
-
-				return false;
-			}
-
-			@Override
-			public boolean keyUp(int keycode) {
-
-				if (currentScene.getAdapter() != null) {
-					return currentScene.getAdapter().keyUp(keycode);
-				}
-
-				return false;
-			}
-
-			@Override
-			public boolean keyTyped(char character) {
-
-				if (currentScene.getAdapter() != null) {
-					return currentScene.getAdapter().keyTyped(character);
-				}
-
-				return false;
-			}
-
-			@Override
-			public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-
-				if (getCurrentScene().getAdapter() != null) {
-					return getCurrentScene().getAdapter().touchDown(screenX, screenY, pointer, button);
-				}
-
-				return false;
-			}
-
-			@Override
-			public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-
-				if (getCurrentScene().getAdapter() != null) {
-					return getCurrentScene().getAdapter().touchUp(screenX, screenY, pointer, button);
-				}
-
-				return false;
-			}
-
-			@Override
-			public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
-
-				if (getCurrentScene().getAdapter() != null) {
-					return getCurrentScene().getAdapter().touchCancelled(screenX, screenY, pointer, button);
-				}
-
-				return false;
-			}
-
-			@Override
-			public boolean touchDragged(int screenX, int screenY, int pointer) {
-
-				if (getCurrentScene().getAdapter() != null) {
-					return getCurrentScene().getAdapter().touchDragged(screenX, screenY, pointer);
-				}
-
-				return false;
-			}
-
-			@Override
-			public boolean mouseMoved(int screenX, int screenY) {
-
-				if (getCurrentScene().getAdapter() != null) {
-					return getCurrentScene().getAdapter().mouseMoved(screenX, screenY);
-				}
-
-				return false;
-			}
-
-			@Override
-			public boolean scrolled(float amountX, float amountY) {
-
-				if (getCurrentScene().getAdapter() != null) {
-					return getCurrentScene().getAdapter().scrolled(amountX, amountY);
-				}
-
-				return false;
-			}
-		});
+		if ("false".equals(System.getProperty("skija.staticLoad"))) {
+			Library.load();
+		}
+		this.context = DirectContext.makeGL();
+		this.initSkia();
+		this.currentScene.create();
+		Gdx.input.setInputProcessor(this.currentScene.getAdapter());
 	}
 
 	@Override
 	public void render() {
-		ScreenUtils.clear(1, 1, 1, 1);
-		getCurrentScene().render();
+		this.currentScene.skijaRender(context, canvas);
 	}
 
 	@Override
 	public void dispose() {
-		getCurrentScene().dispose();
+		this.currentScene.dispose();
 	}
 
 	@Override
 	public void resize(int width, int height) {
 		this.width = width;
 		this.height = height;
-		getCurrentScene().resize(width, height);
+		this.initSkia();
+		this.currentScene.resize(width, height);
 	}
 
 	@Override
 	public void pause() {
-		getCurrentScene().pause();
+		this.currentScene.pause();
 	}
 
 	@Override
 	public void resume() {
-		getCurrentScene().resume();
+		this.currentScene.resume();
 	}
 
 	public int getWidth() {
-		return width;
+		return this.width;
 	}
 
 	public int getHeight() {
-		return height;
+		return this.height;
 	}
 
 	public double getAspectRatio() {
@@ -166,11 +108,11 @@ public class Rainselda extends ApplicationAdapter {
 	}
 
 	public double getAspectRatio(boolean inv) {
-		return inv ? ((double) height / (double) width) : ((double) width / (double) height);
+		return inv ? ((double) this.height / (double) this.width) : ((double) this.width / (double) this.height);
 	}
 
 	public Mapos mouse() {
-		return new Mapos(ShapeRenderer.affixScale(Gdx.input.getX(), height - Gdx.input.getY()));
+		return new Mapos(ShapeRenderer.affixScale(Gdx.input.getX(), this.height - Gdx.input.getY()));
 	}
 
 	public void filesDropped(String[] files) {
@@ -184,11 +126,12 @@ public class Rainselda extends ApplicationAdapter {
 
 		this.currentScene = scene;
 		this.currentScene.create();
-		this.currentScene.resize(getWidth(), getHeight());
+		this.currentScene.resize(this.width, this.height);
+		Gdx.input.setInputProcessor(this.currentScene.getAdapter());
 	}
 
 	public Scene getCurrentScene() {
-		return currentScene;
+		return this.currentScene;
 	}
 
 	/*
@@ -203,34 +146,6 @@ public class Rainselda extends ApplicationAdapter {
 	 */
 	public static Point getGlobalMousePosition() {
 		return MouseInfo.getPointerInfo().getLocation();
-	}
-
-	/*
-	 * Gets the u coordinate 0-1 over the screen.
-	 */
-	public static double getU(double x) {
-		return x / Rainselda.INSTANCE.width;
-	}
-
-	/*
-	 * Gets the v coordinate 0-1 over the screen.
-	 */
-	public static double getV(double y) {
-		return y / Rainselda.INSTANCE.height;
-	}
-
-	/*
-	 * Gets the u coordinate 0-640 over the screen.
-	 */
-	public static double getScreenU(double x) {
-		return getU(x) * 640.0;
-	}
-
-	/*
-	 * Gets the v coordinate 0-480 over the screen.
-	 */
-	public static double getScreenV(double y) {
-		return getV(y) * 480.0;
 	}
 
 }
