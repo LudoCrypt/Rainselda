@@ -73,8 +73,32 @@ public class Mapos {
 		return new Mapos(x * factor, y * factor);
 	}
 
+	public Mapos mul(double otherX, double otherY) {
+		return new Mapos(x * otherX, y * otherY);
+	}
+
 	public Mapos mul(Mapos other) {
 		return new Mapos(x * other.x, y * other.y);
+	}
+
+	public Mapos div(double factor) {
+		return new Mapos(x / factor, y / factor);
+	}
+
+	public Mapos div(double otherX, double otherY) {
+		return new Mapos(x / otherX, y / otherY);
+	}
+
+	public Mapos div(Mapos other) {
+		return new Mapos(x / other.x, y / other.y);
+	}
+
+	public Mapos floor() {
+		return new Mapos(Math.floor(x), Math.floor(y));
+	}
+
+	public Mapos round() {
+		return new Mapos(Math.round(x), Math.round(y));
 	}
 
 	public Mapos neg() {
@@ -87,6 +111,14 @@ public class Mapos {
 
 	public double magnitude() {
 		return Math.sqrt(this.dot(this));
+	}
+
+	public double magnitudeSqr() {
+		return this.dot(this);
+	}
+
+	public double magnitudeMann() {
+		return Math.abs(this.x) + Math.abs(this.y);
 	}
 
 	public Mapos normalize() {
@@ -110,6 +142,18 @@ public class Mapos {
 		double dx = x - other.x;
 		double dy = y - other.y;
 		return Math.sqrt(dx * dx + dy * dy);
+	}
+
+	public double distanceSqr(Mapos other) {
+		double dx = x - other.x;
+		double dy = y - other.y;
+		return dx * dx + dy * dy;
+	}
+
+	public double distanceMann(Mapos other) {
+		double dx = x - other.x;
+		double dy = y - other.y;
+		return Math.abs(dx) + Math.abs(dy);
 	}
 
 	@Override

@@ -16,6 +16,10 @@ uniform ivec2 u_res;
 uniform int u_fill;
 uniform int u_shape;
 
+uniform int u_falloff;
+uniform vec2 u_falloffCenter;
+uniform vec2 u_falloffMag;
+
 uniform int u_thickness;
 
 uniform float u_radius;
@@ -36,6 +40,9 @@ float rect(vec2 point, vec2 size) {
     
     return point.y;
 }
+
+#define THE_NUMBER_E 2.71828182846
+const float LN_NOT_POINT_NOT_ONE = log(0.001);
 
 void main() {
     float d = 0.0;
@@ -61,6 +68,12 @@ void main() {
 
     if (d < 0.0 && fillCheck == 1) {
         gl_FragColor = v_color;
+
+        if (u_falloff == 1) {
+            float d = distance(gl_FragCoord.xy, u_falloffCenter);
+            gl_FragColor.a *= pow(THE_NUMBER_E, (pow(d, u_falloffMag.y) * LN_NOT_POINT_NOT_ONE) / (pow(u_falloffMag.x, u_falloffMag.y)));
+        }
+
         return;
     }
 

@@ -13,46 +13,144 @@ public class ShapeRenderer {
 	public static final int SHAPE_ROUND_RECT = 1;
 	public static final int SHAPE_ROUND_RECT_FIXED = 2;
 
-	public static void drawShapeFixed(SpriteBatch batch, ShaderProgram shapesShader, Texture texture, int shape, int thickness, boolean fill, Mapos pos, Mapos size, double radius) {
-		drawShape(batch, shapesShader, texture, shape, thickness, fill, affixScale(pos.getX(), pos.getY()), affixScale(size.getX(), size.getY()), (int) size.getX(), (int) size.getY(), radius);
+	final SpriteBatch batch;
+	final ShaderProgram shapesShader;
+	final Texture texture;
+
+	int shape;
+	int thickness;
+	boolean fill;
+
+	boolean useRes;
+	int resX;
+	int resY;
+
+	double radius;
+
+	boolean falloff;
+	double falloffX;
+	double falloffY;
+
+	double falloffMag;
+	double falloffSteepness;
+
+	public ShapeRenderer(SpriteBatch batch, ShaderProgram shapesShader, Texture texture) {
+		this.batch = batch;
+		this.shapesShader = shapesShader;
+		this.texture = texture;
 	}
 
-	public static void drawShapeFixed(SpriteBatch batch, ShaderProgram shapesShader, Texture texture, int shape, int thickness, boolean fill, double x, double y, Mapos size, double radius) {
-		drawShape(batch, shapesShader, texture, shape, thickness, fill, affixScale(x, y), affixScale(size.getX(), size.getY()), (int) size.getX(), (int) size.getY(), radius);
+	public ShapeRenderer radius(double radius) {
+		this.radius = radius;
+		return this;
 	}
 
-	public static void drawShapeFixed(SpriteBatch batch, ShaderProgram shapesShader, Texture texture, int shape, int thickness, boolean fill, Mapos pos, double width, double height, double radius) {
-		drawShape(batch, shapesShader, texture, shape, thickness, fill, affixScale(pos.getX(), pos.getY()), affixScale(width, height), (int) width, (int) height, radius);
+	public ShapeRenderer shape(int shape) {
+		this.shape = shape;
+		return this;
 	}
 
-	public static void drawShapeFixed(SpriteBatch batch, ShaderProgram shapesShader, Texture texture, int shape, int thickness, boolean fill, double x, double y, double width, double height, double radius) {
-		drawShape(batch, shapesShader, texture, shape, thickness, fill, affixScale(x, y), affixScale(width, height), (int) width, (int) height, radius);
+	public ShapeRenderer thickness(int thickness) {
+		this.thickness = thickness;
+		return this;
 	}
 
-	public static void drawShape(SpriteBatch batch, ShaderProgram shapesShader, Texture texture, int shape, int thickness, boolean fill, Mapos pos, Mapos size, int resX, int resY, double radius) {
-		drawShape(batch, shapesShader, texture, shape, thickness, fill, pos.getX(), pos.getY(), size.getX(), size.getY(), resX, resY, radius);
+	public ShapeRenderer falloff(boolean falloff) {
+		this.falloff = falloff;
+		return this;
 	}
 
-	public static void drawShape(SpriteBatch batch, ShaderProgram shapesShader, Texture texture, int shape, int thickness, boolean fill, double x, double y, Mapos size, int resX, int resY, double radius) {
-		drawShape(batch, shapesShader, texture, shape, thickness, fill, x, y, size.getX(), size.getY(), resX, resY, radius);
+	public ShapeRenderer falloffX(double falloffX) {
+		this.falloffX = falloffX;
+		return this;
 	}
 
-	public static void drawShape(SpriteBatch batch, ShaderProgram shapesShader, Texture texture, int shape, int thickness, boolean fill, Mapos pos, double width, double height, int resX, int resY, double radius) {
-		drawShape(batch, shapesShader, texture, shape, thickness, fill, pos.getX(), pos.getY(), width, height, resX, resY, radius);
+	public ShapeRenderer falloffY(double falloffY) {
+		this.falloffY = falloffY;
+		return this;
 	}
 
-	public static void drawShape(SpriteBatch batch, ShaderProgram shapesShader, Texture texture, int shape, int thickness, boolean fill, double x, double y, double width, double height, int resX, int resY, double radius) {
-		batch.begin();
-		batch.setShader(shapesShader);
+	public ShapeRenderer falloffMag(double falloffMag) {
+		this.falloffMag = Math.max(falloffMag, 0.0);
+		return this;
+	}
 
-		shapesShader.setUniformi("u_shape", shape);
-		shapesShader.setUniformi("u_res", resX, resY);
-		shapesShader.setUniformi("u_fill", fill ? 1 : 0);
-		shapesShader.setUniformf("u_radius", (float) radius);
-		shapesShader.setUniformi("u_thickness", thickness);
+	public ShapeRenderer falloffSteepness(double falloffSteepness) {
+		this.falloffSteepness = Math.max(falloffSteepness, 0.0);
+		return this;
+	}
 
-		batch.draw(texture, (float) x, (float) y, (float) width, (float) height, -1, -1, 1, 1);
-		batch.end();
+	public ShapeRenderer fill(boolean fill) {
+		this.fill = fill;
+		return this;
+	}
+
+	public ShapeRenderer useRes(boolean useRes) {
+		this.useRes = useRes;
+		return this;
+	}
+
+	public ShapeRenderer resX(int resX) {
+		this.resX = resX;
+		this.useRes = true;
+		return this;
+	}
+
+	public ShapeRenderer resY(int resY) {
+		this.resY = resY;
+		this.useRes = true;
+		return this;
+	}
+
+	public void drawShapeFixed(Mapos pos, Mapos size) {
+		if (!this.useRes) {
+			this.resX = (int) size.getX();
+			this.resY = (int) size.getY();
+		}
+
+		this.drawShape(affixScale(pos.getX(), pos.getY()), affixScale(size.getX(), size.getY()));
+	}
+
+	public void drawShapeFixed(double x, double y, Mapos size) {
+		this.drawShapeFixed(new Mapos(x, y), new Mapos(size.getX(), size.getY()));
+	}
+
+	public void drawShapeFixed(Mapos pos, double width, double height) {
+		this.drawShapeFixed(new Mapos(pos.getX(), pos.getY()), new Mapos(width, height));
+	}
+
+	public void drawShapeFixed(double x, double y, double width, double height) {
+		this.drawShapeFixed(new Mapos(x, y), new Mapos(width, height));
+	}
+
+	public void drawShape(Mapos pos, Mapos size) {
+		this.drawShape(pos.getX(), pos.getY(), size.getX(), size.getY());
+	}
+
+	public void drawShape(double x, double y, Mapos size) {
+		this.drawShape(x, y, size.getX(), size.getY());
+	}
+
+	public void drawShape(Mapos pos, double width, double height) {
+		this.drawShape(pos.getX(), pos.getY(), width, height);
+	}
+
+	public void drawShape(double x, double y, double width, double height) {
+		this.batch.begin();
+		this.batch.setShader(this.shapesShader);
+
+		this.shapesShader.setUniformi("u_shape", this.shape);
+		this.shapesShader.setUniformi("u_res", this.resX, this.resY);
+		this.shapesShader.setUniformi("u_fill", this.fill ? 1 : 0);
+		this.shapesShader.setUniformf("u_radius", (float) this.radius);
+		this.shapesShader.setUniformi("u_thickness", this.thickness);
+
+		this.shapesShader.setUniformi("u_falloff", this.falloff ? 1 : 0);
+		this.shapesShader.setUniformf("u_falloffCenter", (float) this.falloffX, (float) this.falloffY);
+		this.shapesShader.setUniformf("u_falloffMag", (float) this.falloffMag, (float) this.falloffSteepness);
+
+		this.batch.draw(this.texture, (float) x, (float) y, (float) width, (float) height, -1, -1, 1, 1);
+		this.batch.end();
 	}
 
 	public static Mapos affixScale(Texture texture, double height) {

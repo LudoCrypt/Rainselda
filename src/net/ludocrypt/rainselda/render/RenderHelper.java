@@ -56,10 +56,23 @@ public class RenderHelper {
 			Rect bounds = font.measureText(text);
 			Mapos pos = anchor.anchor(new Mapos(boxWidth, boxHeight), new Mapos(bounds.getWidth(), bounds.getHeight())).add(x, y);
 			canvas.drawTextBlob(blob, (float) pos.getX(), (float) (Rainselda.INSTANCE.getHeight() - pos.getY()), paint);
+			// canvas.drawRect(bounds.inflate(3f).offset(0, 3.0f * bounds.getHeight() / 2.0f).offset((float) pos.getX(), (float) (Rainselda.INSTANCE.getHeight() - pos.getY())), paint.setAlphaf(0.5f));
 		}
 
 		ctx.flush();
 		ctx.resetGLAll();
+	}
+
+	public static Rect textBounds(Font font, String text, double x, double y, double boxWidth, double boxHeight, Anchor anchor) {
+		TextBlob blob = Shaper.make().shape(text, font);
+
+		if (blob != null) {
+			Rect bounds = font.measureText(text);
+			Mapos pos = anchor.anchor(new Mapos(boxWidth, boxHeight), new Mapos(bounds.getWidth(), bounds.getHeight())).add(x, y);
+			return bounds.inflate(3f).offset(0, 3.0f * bounds.getHeight() / 2.0f).offset((float) pos.getX(), (float) (Rainselda.INSTANCE.getHeight() - pos.getY()));
+		}
+
+		return Rect.makeWH(0, 0);
 	}
 
 	public enum Anchor {

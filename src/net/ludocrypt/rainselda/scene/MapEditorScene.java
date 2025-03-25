@@ -24,6 +24,7 @@ import io.github.humbleui.skija.FontEdging;
 import io.github.humbleui.skija.FontStyle;
 import io.github.humbleui.skija.Paint;
 import io.github.humbleui.skija.Typeface;
+import io.github.humbleui.types.Rect;
 import net.ludocrypt.rainselda.Rainselda;
 import net.ludocrypt.rainselda.region.MapObject;
 import net.ludocrypt.rainselda.region.Mapos;
@@ -49,6 +50,7 @@ public class MapEditorScene extends Scene {
 	Font font;
 
 	ShaderProgram shapesShader;
+	ShapeRenderer shapeRenderer;
 
 	Stage stage;
 
@@ -72,6 +74,7 @@ public class MapEditorScene extends Scene {
 	int rightClickWidth;
 
 	boolean awaitingRoom;
+	Mapos alignedRoom = null;
 
 	String[] mapExtraWidgets = new String[] { "Add Room", "Add Note", "Add Death", "Add Life", "Add Piss", "Add Shit" };
 
@@ -95,6 +98,7 @@ public class MapEditorScene extends Scene {
 		this.font.setEdging(FontEdging.SUBPIXEL_ANTI_ALIAS);
 
 		this.shapesShader = new ShaderProgram(Gdx.files.internal("shaders/shapes.vsh"), Gdx.files.internal("shaders/shapes.fsh"));
+		this.shapeRenderer = new ShapeRenderer(this.batch, this.shapesShader, this.logo);
 
 		this.stage = new Stage(new ScreenViewport());
 
@@ -155,13 +159,20 @@ public class MapEditorScene extends Scene {
 					return true;
 				} else if (button == 0) {
 					if (MapEditorScene.this.hasRightClicked) {
-						if (MapEditorScene.this.rightClickIndex(MapEditorScene.this.mapExtraWidgets.length) == 0) {
-
+						if (MapEditorScene.this.rightClickIndex(MapEditorScene.this.mapExtraWidgets) == 0) {
 							MapEditorScene.this.awaitingRoom = true;
 						}
 					} else if (MapEditorScene.this.awaitingRoom) {
-						Mapos world = MapEditorScene.this.viewport.worldSpace(ShapeRenderer.unfixScaleCentered(new Mapos(x, y)));
-						MapEditorScene.this.region.addRoom(new Room(), world);
+						MapEditorScene.this.awaitingRoom = false;
+
+						Mapos roomPos = MapEditorScene.this.viewport.worldSpace(ShapeRenderer.unfixScaleCentered(new Mapos(x, y)));
+
+						if (MapEditorScene.this.alignedRoom != null) {
+							roomPos = MapEditorScene.this.alignedRoom;
+							MapEditorScene.this.alignedRoom = null;
+						}
+
+						MapEditorScene.this.region.addRoom(new Room(), roomPos);
 					}
 				}
 
@@ -280,8 +291,10 @@ public class MapEditorScene extends Scene {
 		double boxHeight = (7.0 * rainselda.getHeight() / 8.0) - this.yBuffer;
 
 		this.batch.setColor(RenderHelper.hexToColor("494949"));
+		this.shapeRenderer.shape(ShapeRenderer.SHAPE_ROUND_RECT_FIXED).thickness(2).fill(false).useRes(false).radius(this.radius * 2);
+
 		for (int i = 0; i < 3; i++) {
-			ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT_FIXED, 2, false, this.columnBoarders[i] + this.xBuffer, this.yBuffer, (this.columnBoarders[i + 1] - this.columnBoarders[i]) - 2 * this.xBuffer, boxHeight, this.radius * 2);
+			this.shapeRenderer.drawShapeFixed(this.columnBoarders[i] + this.xBuffer, this.yBuffer, (this.columnBoarders[i + 1] - this.columnBoarders[i]) - 2 * this.xBuffer, boxHeight);
 		}
 
 	}
@@ -289,7 +302,8 @@ public class MapEditorScene extends Scene {
 	private void drawBackground() {
 		// TODO: Theme
 		this.batch.setColor(RenderHelper.hexToColor("141414"));
-		ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_RECT, 2, true, 0, 0, this.rainselda.getWidth(), this.rainselda.getHeight(), 0.0);
+		this.shapeRenderer.shape(ShapeRenderer.SHAPE_RECT).thickness(2).fill(true).useRes(false);
+		this.shapeRenderer.drawShapeFixed(0, 0, this.rainselda.getWidth(), this.rainselda.getHeight());
 	}
 
 	private void drawRightClickWidget(DirectContext ctx, Canvas canvas) {
@@ -300,11 +314,13 @@ public class MapEditorScene extends Scene {
 
 			// TODO: Theme
 			this.batch.setColor(RenderHelper.hexToColor("141414"));
-			ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, true, this.rightClickX, this.rightClickY - this.mapExtraWidgets.length * this.textSpacingY, bW, bH, 0.2);
+			this.shapeRenderer.shape(ShapeRenderer.SHAPE_ROUND_RECT).thickness(3).fill(true).useRes(false).radius(0.2);
+			this.shapeRenderer.drawShapeFixed(this.rightClickX, this.rightClickY - this.mapExtraWidgets.length * this.textSpacingY, bW, bH);
 
 			// TODO: Theme
 			this.batch.setColor(RenderHelper.hexToColor("494949"));
-			ShapeRenderer.drawShapeFixed(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, false, this.rightClickX, this.rightClickY - this.mapExtraWidgets.length * this.textSpacingY, bW, bH, 0.2);
+			this.shapeRenderer.shape(ShapeRenderer.SHAPE_ROUND_RECT).thickness(3).fill(false).useRes(false).radius(0.2);
+			this.shapeRenderer.drawShapeFixed(this.rightClickX, this.rightClickY - this.mapExtraWidgets.length * this.textSpacingY, bW, bH);
 
 			int i = 0;
 			for (String option : this.mapExtraWidgets) {
@@ -314,7 +330,7 @@ public class MapEditorScene extends Scene {
 				Paint paint = RenderHelper.paint(Color.WHITE);
 
 				// TODO: Theme
-				if (rightClickIndex(this.mapExtraWidgets.length) == i) {
+				if (rightClickIndex(this.mapExtraWidgets) == i) {
 					paint = RenderHelper.paint(Color.GREEN);
 				}
 
@@ -325,7 +341,14 @@ public class MapEditorScene extends Scene {
 		}
 	}
 
-	private int rightClickIndex(int options) {
+	private Rect rightClickWidgetBounds(int idx) {
+		double transX = this.rightClickX;
+		double transY = this.rightClickY - idx * this.textSpacingY;
+
+		return RenderHelper.textBounds(this.font, this.mapExtraWidgets[idx], transX, transY, this.rightClickWidth, this.textSpacingY, Anchor.CENTER);
+	}
+
+	private int rightClickIndex(String[] options) {
 		int x = Gdx.input.getX();
 		int y = MapEditorScene.this.rainselda.getHeight() - Gdx.input.getY();
 
@@ -339,8 +362,12 @@ public class MapEditorScene extends Scene {
 
 		int index = (int) Math.floor(-(y - this.rightClickY) / (this.textSpacingY));
 
-		if (index >= 0 && index < options) {
-			return index;
+		if (index >= 0 && index < options.length) {
+			Rect bounds = this.rightClickWidgetBounds(index);
+
+			if (x > bounds.getLeft() && x < bounds.getRight() && Gdx.input.getY() < bounds.getBottom() && Gdx.input.getY() > bounds.getTop()) {
+				return index;
+			}
 		}
 
 		return -1;
@@ -354,6 +381,10 @@ public class MapEditorScene extends Scene {
 		Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
 		Gdx.gl.glScissor((int) (this.columnBoarders[1] + this.xBuffer), (int) this.yBuffer, (int) (this.columnBoarders[2] - this.columnBoarders[1] - this.xBuffer - this.xBuffer), (int) (7.0 * rainselda.getHeight() / 8.0 - this.yBuffer));
 
+		Mapos mousePos = this.viewport.worldSpace(ShapeRenderer.unfixScaleCentered(this.rainselda.mouse()));
+		Room closestRoom = null;
+		double closestDist = Double.MAX_VALUE;
+
 		for (Entry<MapObject, Mapos> entry : this.region.getMap().entrySet()) {
 			MapObject object = entry.getKey();
 			Mapos pos = entry.getValue();
@@ -361,11 +392,54 @@ public class MapEditorScene extends Scene {
 			if (object instanceof Room room) {
 				this.batch.setColor(Color.WHITE);
 				drawRoom(pos);
+
+				double d = pos.distanceSqr(mousePos);
+				if (d < closestDist) {
+					closestRoom = room;
+					closestDist = d;
+				}
+
 			}
 
 		}
 
-		drawRoom(this.viewport.worldSpace(ShapeRenderer.unfixScaleCentered(this.rainselda.mouse())));
+		if (this.awaitingRoom) {
+			if (closestRoom != null) {
+				Mapos center = this.region.getMap().get(closestRoom);
+				Mapos nearIdx = center.sub(mousePos).div(32, 24).round();
+
+				double opacity = RenderHelper.lerp(0.3, 0, center.sub(mousePos).div(60).magnitudeSqr());
+				this.batch.setColor(Color.GRAY.cpy().mul(1, 1, 1, (float) opacity));
+
+				int b = 4;
+				if (opacity > 0 && Math.abs(nearIdx.getX()) <= b && Math.abs(nearIdx.getY()) <= b) {
+
+					this.shapeRenderer.falloff(true).falloffX(Gdx.input.getX()).falloffY(this.rainselda.getHeight() - Gdx.input.getY()).falloffMag(new Mapos(60, 0).mul(this.viewport.composeMat(false).setTranslation(0, 0, 0)).getX()).falloffSteepness(5.0);
+
+					int r = b;
+					for (int ix = -r; ix <= r; ix++) {
+						for (int iy = -r; iy <= r; iy++) {
+							drawRoom(center.add(32 * ix, 24 * iy));
+						}
+					}
+
+					this.shapeRenderer.falloff(false);
+
+					this.batch.setColor(Color.WHITE);
+					drawRoom(center);
+
+					this.alignedRoom = center.add(32 * -nearIdx.getX(), 24 * -nearIdx.getY());
+					this.batch.setColor(Color.GREEN.cpy().mul(1, 1, 1, (float) opacity));
+					drawRoom(this.alignedRoom);
+				} else {
+					this.alignedRoom = null;
+				}
+			}
+
+			this.batch.setColor(Color.WHITE);
+			this.shapeRenderer.falloff(false);
+			drawRoom(mousePos);
+		}
 
 		Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
 
@@ -374,7 +448,8 @@ public class MapEditorScene extends Scene {
 
 	private void drawRoom(Mapos pos) {
 		Mapos scale = ShapeRenderer.affixScale(32, 24);
-		ShapeRenderer.drawShape(this.batch, this.shapesShader, this.logo, ShapeRenderer.SHAPE_ROUND_RECT, 3, false, this.viewport.screenSpaceFix(pos.getX(), pos.getY()).sub(scale.mul(0.5)), scale.getX(), scale.getY(), 32, 24, 0.5);
+		this.shapeRenderer.shape(ShapeRenderer.SHAPE_ROUND_RECT).thickness(3).fill(false).resX(32).resY(24).radius(0.5);
+		this.shapeRenderer.drawShape(this.viewport.screenSpaceFix(pos.getX(), pos.getY()).sub(scale.mul(0.5)), scale.getX(), scale.getY());
 	}
 
 	@Override
